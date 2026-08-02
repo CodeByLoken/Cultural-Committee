@@ -315,24 +315,42 @@ async function generateReceiptPDF(data) {
     </body>
     </html>
   `;
+    if (!global.sharedBrowser) {
+        global.sharedBrowser = null;
+    }
 
-  let browser;
-  try {
-    browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 750, height: 900, deviceScaleFactor: 2 });
-    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-    
-    const element = await page.$('#receiptContainer');
-    const imageBase64 = await element.screenshot({ encoding: 'base64', type: 'png' });
-    const pdfBuffer = await page.pdf({ format: 'A5', printBackground: true, margin: { top: '2mm', right: '2mm', bottom: '2mm', left: '2mm' } });
-    
-    await browser.close();
-    return { pdfBuffer, imageBase64: `data:image/png;base64,${imageBase64}` };
-  } catch (err) {
-    if (browser) await browser.close();
-    throw err;
-  }
+    let page;
+    try {
+        // 2. Only launch the browser if it isn't already running
+        if (!global.sharedBrowser) {
+            global.sharedBrowser = await puppeteer.launch({
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage', // CRUCIAL for Render's 512MB RAM limit
+                    '--single-process'         // Reduces memory footprint
+                ]
+            });
+        }
+
+        // 3. Open a new TAB instead of a new browser
+        page = await global.sharedBrowser.newPage();
+        await page.setViewport({ width: 750, height: 900, deviceScaleFactor: 2 });
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+
+        const element = await page.$('#receiptContainer');
+        const imageBase64 = await element.screenshot({ encoding: 'base64', type: 'png' });
+        const pdfBuffer = await page.pdf({ format: 'A5', printBackground: true, margin: { top: '2mm', right: '2mm', bottom: '2mm', left: '2mm' } });
+
+        // 4. ONLY close the tab when finished, leave the browser running!
+        await page.close();
+
+        return { pdfBuffer, imageBase64: `data:image/png;base64,${imageBase64}` };
+    } catch (err) {
+        // If an error happens, make sure we at least close the stuck tab
+        if (page) await page.close();
+        throw err;
+    }
 }
 
 module.exports = { generateReceiptPDF };
