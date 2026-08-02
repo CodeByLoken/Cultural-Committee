@@ -24,31 +24,50 @@ const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzLE686MbDnfe
 // --- ADD THIS CACHE VARIABLE RIGHT ABOVE THE STATS ROUTE ---
 let statsCache = { data: null, lastFetch: 0 };
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+// Get Dashboard Data, Stats, and Users List with Safety Fallbacks
 app.get('/api/stats', async (req, res) => {
     try {
         const flatQuery = req.query.flat;
 
-        // 1. If it's a search for a specific flat, do NOT use cache
+        // 1. Search query (Flat Search) - Bypass cache
         if (flatQuery) {
             const response = await fetch(`${GOOGLE_SCRIPT_URL}?flat=${encodeURIComponent(flatQuery)}`, { redirect: 'follow' });
-            return res.json(JSON.parse(await response.text()));
+            const rawText = await response.text();
+            return res.json(JSON.parse(rawText));
         }
 
-        // 2. If normal load, check if we have fresh data in the cache (under 5 mins old)
+        // 2. Return fresh cached data if available (under 5 mins old)
         if (statsCache.data && (Date.now() - statsCache.lastFetch < CACHE_TTL)) {
-            return res.json(statsCache.data); // Instant response!
+            return res.json(statsCache.data);
         }
 
-        // 3. Otherwise, fetch fresh data from Google Apps Script
+        // 3. Fetch from Google Apps Script
         const response = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
         const rawText = await response.text();
-        const data = JSON.parse(rawText);
 
-        // Save to cache for the next user
-        statsCache = { data, lastFetch: Date.now() };
+        // Safety Check: Make sure Google returned valid JSON
+        if (rawText && rawText.trim().startsWith('{')) {
+            const data = JSON.parse(rawText);
+            statsCache = { data, lastFetch: Date.now() }; // Update Cache
+            return res.json(data);
+        }
 
-        res.json(data);
+        // 4. FALLBACK: If Google Apps Script fails or returns empty, serve old cache instead of hanging!
+        if (statsCache.data) {
+            console.warn("Google Apps Script response invalid, serving stale cache fallback.");
+            return res.json(statsCache.data);
+        }
+
+        throw new Error("Invalid response received from Google Apps Script.");
+
     } catch (error) {
+        console.error("Stats API Error:", error.message);
+
+        // Fallback: If cache exists, return it so login screen doesn't break
+        if (statsCache.data) {
+            return res.json(statsCache.data);
+        }
+
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
