@@ -376,16 +376,41 @@ input[readonly] { background: #f8fafc; font-weight: bold; color: var(--navy-dark
   z-index: 9999;
 }
 
+/* DEVOTIONAL LOGIN OVERLAY STYLES */
 .login-card {
-  background: white;
-  padding: 32px 26px;
-  border-radius: var(--border-radius);
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-  border-top: 6px solid var(--gold-accent);
-  box-shadow: var(--shadow-lg);
+    max-width: 420px;
+    width: 90%;
+    margin: 0 auto;
+    padding: 30px 25px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    text-align: center;
 }
+
+/* modern full-width login button */
+.btn-primary-glow {
+    width: 100%;
+    padding: 14px 20px;
+    margin-top: 15px;
+    background: linear-gradient(135deg, #c1121f, #780000);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(193, 18, 31, 0.35);
+    transition: all 0.3s ease;
+    display: block;
+}
+
+    .btn-primary-glow:hover {
+        background: linear-gradient(135deg, #a00e19, #5c0000);
+        box-shadow: 0 6px 20px rgba(193, 18, 31, 0.5);
+        transform: translateY(-1px);
+    }
+
 
 .devotional-mantra { color: var(--primary-red); font-weight: bold; font-size: 0.9rem; margin-top: 4px; }
 .login-card h2 { color: var(--navy-dark); font-size: 1.35rem; margin-top: 2px; }
