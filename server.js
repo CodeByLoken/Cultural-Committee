@@ -21,12 +21,32 @@ app.get('/', (req, res) => {
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzLE686MbDnfe2rwnQa715tw99al8rMjAvpXeuH8WKrlN9xF3nH6DTez_klUNVUGY_o/exec';
 
 // Get Dashboard Data, Stats, and Users List
+// --- ADD THIS CACHE VARIABLE RIGHT ABOVE THE STATS ROUTE ---
+let statsCache = { data: null, lastFetch: 0 };
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
 app.get('/api/stats', async (req, res) => {
     try {
-        const flat = req.query.flat ? `?flat=${encodeURIComponent(req.query.flat)}` : '';
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}${flat}`, { redirect: 'follow' });
+        const flatQuery = req.query.flat;
+
+        // 1. If it's a search for a specific flat, do NOT use cache
+        if (flatQuery) {
+            const response = await fetch(`${GOOGLE_SCRIPT_URL}?flat=${encodeURIComponent(flatQuery)}`, { redirect: 'follow' });
+            return res.json(JSON.parse(await response.text()));
+        }
+
+        // 2. If normal load, check if we have fresh data in the cache (under 5 mins old)
+        if (statsCache.data && (Date.now() - statsCache.lastFetch < CACHE_TTL)) {
+            return res.json(statsCache.data); // Instant response!
+        }
+
+        // 3. Otherwise, fetch fresh data from Google Apps Script
+        const response = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
         const rawText = await response.text();
         const data = JSON.parse(rawText);
+
+        // Save to cache for the next user
+        statsCache = { data, lastFetch: Date.now() };
+
         res.json(data);
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });

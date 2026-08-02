@@ -686,37 +686,49 @@ function printCategoryTable(category) {
     const cardElement = tableElement.closest('.category-expense-card');
     const contentToPrint = cardElement.outerHTML;
 
-    // 3. Create a temporary printing window behind the scenes
-    const printWin = window.open('', '', 'width=800,height=600');
+    // 3. Create a temporary printing window
+    const printWin = window.open('', '', 'width=900,height=700');
 
-    // 4. Write the table into the new window with clean printing styles
+    // Get the website's root URL to find the CSS file
+    const origin = window.location.origin;
+
+    // 4. Write the table into the new window with the ORIGINAL CSS linked
     printWin.document.write(`
     <html>
       <head>
         <title>Print Statement - ${category}</title>
+        <!-- Link to your exact style.css file -->
+        <link rel="stylesheet" href="${origin}/css/style.css" />
         <style>
-          body { font-family: sans-serif; padding: 20px; color: #000; }
-          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-          th, td { border: 1px solid #000; padding: 10px; text-align: left; }
-          th { background-color: #f0f0f0; }
-          .right-text { text-align: right; }
+          /* Force browsers to print background colors and graphics */
+          body { 
+            padding: 40px; 
+            background: white; 
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important; 
+          }
           .btn-print-sm { display: none !important; } /* Hide the print button on paper */
-          .category-header { display: flex; align-items: center; margin-bottom: 10px; }
-          .cat-icon { margin-right: 10px; display: inline-block; width: 24px; }
-          h4 { margin: 0; font-size: 1.25rem; }
+          
+          /* Remove the heavy shadow for cleaner paper printing, keep borders */
+          .category-expense-card { box-shadow: none !important; border: 2px solid #e2e8f0; }
         </style>
       </head>
       <body>
         ${contentToPrint}
+        <script>
+          // Wait half a second for the CSS file to load before popping up the print dialog
+          window.onload = () => {
+            setTimeout(() => {
+                window.print();
+                window.close();
+            }, 500);
+          };
+        </script>
       </body>
     </html>
   `);
 
-    // 5. Trigger the print dialog and close the temporary window
     printWin.document.close();
-    printWin.focus();
-    printWin.print();
-    printWin.close();
 }
 
 function printExpenseStatement() {
