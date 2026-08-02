@@ -1,5 +1,7 @@
 let AUTHORIZED_USERS = {};
 let loggedInUser = "";
+let sessionTimer;
+const TIMEOUT_DURATION = 90 * 60 * 1000; // 90 minutes in milliseconds
 let userRole = "user";
 let currentData = {};
 let currentLang = "en";
@@ -120,10 +122,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const langSel = document.getElementById('langSelect');
     if (langSel) currentLang = langSel.value || 'en';
 
-    changeLanguage(); // <--- ADD THIS LINE to sync language on startup
-
+    changeLanguage();
     fetchStats();
     document.getElementById('expDate').valueAsDate = new Date();
+
+    // --- ADD THESE 3 LINES ---
+    // Resets the 90-minute timer whenever the user interacts with the app
+    document.body.addEventListener('mousemove', resetSessionTimer);
+    document.body.addEventListener('click', resetSessionTimer);
+    document.body.addEventListener('keypress', resetSessionTimer);
 });
 
 async function fetchStats() {
@@ -165,7 +172,7 @@ function handleLogin() {
         document.getElementById('loginOverlay').style.display = "none";
         document.getElementById('mainWrapper').style.display = "block";
         errDiv.style.display = "none";
-
+        resetSessionTimer();
         const isAdmin = userRole === 'admin' || user.toLowerCase().includes('admin');
         document.getElementById('userRoleBadge').innerText = isAdmin ? 'Admin' : 'User';
         document.getElementById('userRoleBadge').style.background = isAdmin ? '#fb8500' : '#ffb703';
@@ -196,7 +203,8 @@ function handleLogin() {
 function handleLogout() {
   loggedInUser = "";
   document.getElementById('mainWrapper').style.display = "none";
-  document.getElementById('loginOverlay').style.display = "flex";
+    document.getElementById('loginOverlay').style.display = "flex";
+    clearTimeout(sessionTimer);
 }
 
 function switchTab(tabName) {
@@ -432,26 +440,58 @@ async function generateAndSave() {
 }
 
 function sendWhatsApp() {
-  const t = i18n[currentLang] || i18n.en;
-  let text = `*${currentLang === 'en' ? 'PURVANCHAL GANESHOTSAV MANDAL' : (currentLang === 'hi' ? 'पूर्वांचल गणेशोत्सव मंडल' : 'पूर्वांचल गणेशोत्सव मंडळ')}*%0A` +
-    `*${currentLang === 'en' ? 'DONATION RECEIPT • YEAR : 2026' : (currentLang === 'hi' ? 'दान / चंदा रसीद • वर्ष २०२६' : 'देणगी / वर्गणी पावती • वर्ष २०२६')}*%0A` +
-    `----------------------------------%0A` +
-    `*Receipt No:* ${currentData.receiptNo}%0A` +
-    `*Date:* ${currentData.today}%0A` +
-    `*Name:* ${currentData.name}%0A` +
-    `*Flat No:* ${currentData.flat}%0A` +
-    `*Amount:* ₹${currentData.amount}/- (${currentData.amountWords})%0A` +
-    `*Representative:* ${currentData.collectedBy}%0A` +
-    `----------------------------------%0A`;
+    const t = i18n[currentLang] || i18n.en;
 
-  if (currentData.imageUrl) {
-    text += `${t.waLinkMsg}%0A${currentData.imageUrl}%0A%0A`;
-  }
+    // Use \n for newlines instead of %0A
+    let text = `*${currentLang === 'en' ? 'PURVANCHAL GANESHOTSAV MANDAL' : (currentLang === 'hi' ? 'पूर्वांचल गणेशोत्सव मंडल' : 'पूर्वांचल गणेशोत्सव मंडळ')}*\n` +
+        `*${currentLang === 'en' ? 'DONATION RECEIPT • YEAR : 2026' : (currentLang === 'hi' ? 'दान / चंदा रसीद • वर्ष २०२६' : 'देणगी / वर्गणी पावती • वर्ष २०२६')}*\n` +
+        `----------------------------------\n` +
+        `*Receipt No:* ${currentData.receiptNo}\n` +
+        `*Date:* ${currentData.today}\n` +
+        `*Name:* ${currentData.name}\n` +
+        `*Flat No:* ${currentData.flat}\n` +
+        `*Amount:* ₹${currentData.amount}/- (${currentData.amountWords})\n` +
+        `*Representative:* ${currentData.collectedBy}\n` +
+        `----------------------------------\n`;
 
-  text += `Thank you for your valuable support! 🌺`;
+    if (currentData.imageUrl && currentData.imageUrl !== 'undefined' && currentData.imageUrl.trim() !== '') {
+        text += `${t.waLinkMsg}\n${currentData.imageUrl}\n\n`;
+    }
 
-  const formattedWa = currentData.whatsapp.length === 10 ? '91' + currentData.whatsapp : currentData.whatsapp;
-  window.open(`https://wa.me/${formattedWa}?text=${text}`, '_blank');
+    text += `Thank you for your valuable support! 🌺`;
+
+    const formattedWa = currentData.whatsapp.length === 10 ? '91' + currentData.whatsapp : currentData.whatsapp;
+
+    // encodeURIComponent perfectly formats the \n, emojis, and Google Drive links!
+    window.open(`https://wa.me/${formattedWa}?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function resendWA(receiptNo, date, name, flat, amount, collectedBy, whatsapp, imageUrl) {
+    const t = i18n[currentLang] || i18n.en;
+
+    // Use \n for newlines instead of %0A
+    let text = `*${currentLang === 'en' ? 'PURVANCHAL GANESHOTSAV MANDAL' : (currentLang === 'hi' ? 'पूर्वांचल गणेशोत्सव मंडल' : 'पूर्वांचल गणेशोत्सव मंडळ')}*\n` +
+        `*${currentLang === 'en' ? 'DONATION RECEIPT • YEAR : 2026' : (currentLang === 'hi' ? 'दान / चंदा रसीद • वर्ष २०२६' : 'देणगी / वर्गणी पावती • वर्ष २०२६')}*\n` +
+        `----------------------------------\n` +
+        `*Receipt No:* ${receiptNo}\n` +
+        `*Date:* ${date}\n` +
+        `*Name:* ${name}\n` +
+        `*Flat No:* ${flat}\n` +
+        `*Amount:* ₹${amount}/-\n` +
+        `*Representative:* ${collectedBy}\n` +
+        `----------------------------------\n`;
+
+    if (imageUrl && imageUrl !== 'undefined' && imageUrl !== 'null' && imageUrl.trim() !== '') {
+        text += `${t.waLinkMsg}\n${imageUrl}\n\n`;
+    }
+
+    text += `Thank you for your support !! 🌺`;
+
+    const formattedWa = whatsapp.replace(/[^0-9]/g, '');
+    const finalWa = formattedWa.length === 10 ? '91' + formattedWa : formattedWa;
+
+    // encodeURIComponent perfectly formats the \n, emojis, and Google Drive links!
+    window.open(`https://wa.me/${finalWa}?text=${encodeURIComponent(text)}`, '_blank');
 }
 
 function resetForm() {
@@ -635,7 +675,48 @@ function renderExpensesTable() {
 }
 
 function printCategoryTable(category) {
-  window.print();
+    // 1. Find the specific table the user clicked on
+    const safeCat = category.replace(/[^a-zA-Z0-9]/g, '');
+    const tableId = `table-${safeCat}`;
+    const tableElement = document.getElementById(tableId);
+
+    if (!tableElement) return;
+
+    // 2. Grab the entire card wrapping that table
+    const cardElement = tableElement.closest('.category-expense-card');
+    const contentToPrint = cardElement.outerHTML;
+
+    // 3. Create a temporary printing window behind the scenes
+    const printWin = window.open('', '', 'width=800,height=600');
+
+    // 4. Write the table into the new window with clean printing styles
+    printWin.document.write(`
+    <html>
+      <head>
+        <title>Print Statement - ${category}</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; color: #000; }
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          th, td { border: 1px solid #000; padding: 10px; text-align: left; }
+          th { background-color: #f0f0f0; }
+          .right-text { text-align: right; }
+          .btn-print-sm { display: none !important; } /* Hide the print button on paper */
+          .category-header { display: flex; align-items: center; margin-bottom: 10px; }
+          .cat-icon { margin-right: 10px; display: inline-block; width: 24px; }
+          h4 { margin: 0; font-size: 1.25rem; }
+        </style>
+      </head>
+      <body>
+        ${contentToPrint}
+      </body>
+    </html>
+  `);
+
+    // 5. Trigger the print dialog and close the temporary window
+    printWin.document.close();
+    printWin.focus();
+    printWin.print();
+    printWin.close();
 }
 
 function printExpenseStatement() {
@@ -680,25 +761,43 @@ async function searchRecords() {
 }
 
 function resendWA(receiptNo, date, name, flat, amount, collectedBy, whatsapp, imageUrl) {
-  const t = i18n[currentLang] || i18n.en;
-  let text = `*${currentLang === 'en' ? 'PURVANCHAL GANESHOTSAV MANDAL' : (currentLang === 'hi' ? 'पूर्वांचल गणेशोत्सव मंडल' : 'पूर्वांचल गणेशोत्सव मंडळ')}*%0A` +
-    `*${currentLang === 'en' ? 'DONATION RECEIPT • YEAR : 2026' : (currentLang === 'hi' ? 'दान / चंदा रसीद • वर्ष २०२६' : 'देणगी / वर्गणी पावती • वर्ष २०२६')}*%0A` +
-    `----------------------------------%0A` +
-    `*Receipt No:* ${receiptNo}%0A` +
-    `*Date:* ${date}%0A` +
-    `*Name:* ${name}%0A` +
-    `*Flat No:* ${flat}%0A` +
-    `*Amount:* ₹${amount}/-%0A` +
-    `*Representative:* ${collectedBy}%0A` +
-    `----------------------------------%0A`;
+    const t = i18n[currentLang] || i18n.en;
 
-  if (imageUrl) {
-    text += `${t.waLinkMsg}%0A${imageUrl}%0A%0A`;
-  }
+    // Use \n for newlines instead of %0A
+    let text = `*${currentLang === 'en' ? 'PURVANCHAL GANESHOTSAV MANDAL' : (currentLang === 'hi' ? 'पूर्वांचल गणेशोत्सव मंडल' : 'पूर्वांचल गणेशोत्सव मंडळ')}*\n` +
+        `*${currentLang === 'en' ? 'DONATION RECEIPT • YEAR : 2026' : (currentLang === 'hi' ? 'दान / चंदा रसीद • वर्ष २०२६' : 'देणगी / वर्गणी पावती • वर्ष २०२६')}*\n` +
+        `----------------------------------\n` +
+        `*Receipt No:* ${receiptNo}\n` +
+        `*Date:* ${date}\n` +
+        `*Name:* ${name}\n` +
+        `*Flat No:* ${flat}\n` +
+        `*Amount:* ₹${amount}/-\n` +
+        `*Representative:* ${collectedBy}\n` +
+        `----------------------------------\n`;
 
-  text += `Thank you for your support !! 🌺`;
+    if (imageUrl && imageUrl !== 'undefined' && imageUrl !== 'null' && imageUrl.trim() !== '') {
+        text += `${t.waLinkMsg}\n${imageUrl}\n\n`;
+    }
 
-  const formattedWa = whatsapp.replace(/[^0-9]/g, '');
-  const finalWa = formattedWa.length === 10 ? '91' + formattedWa : formattedWa;
-  window.open(`https://wa.me/${finalWa}?text=${text}`, '_blank');
+    text += `Thank you for your support !! 🌺`;
+
+    const formattedWa = whatsapp.replace(/[^0-9]/g, '');
+    const finalWa = formattedWa.length === 10 ? '91' + formattedWa : formattedWa;
+
+    // encodeURIComponent perfectly formats the \n, emojis, and Google Drive links!
+    window.open(`https://wa.me/${finalWa}?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function resetSessionTimer() {
+    // If no one is logged in, do nothing
+    if (!loggedInUser) return;
+
+    // Clear the existing timer
+    clearTimeout(sessionTimer);
+
+    // Start a fresh 90-minute countdown
+    sessionTimer = setTimeout(() => {
+        alert("Session expired due to 90 minutes of inactivity. Please login again.");
+        handleLogout();
+    }, TIMEOUT_DURATION);
 }
