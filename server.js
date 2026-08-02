@@ -80,6 +80,7 @@ app.post('/api/save-receipt', async (req, res) => {
             const sheetData = JSON.parse(rawText);
             if (sheetData.status === 'success') {
                 receiptNo = sheetData.receiptNo;
+                statsCache.data = null;
             }
         } catch (e) {
             console.warn("POST saveEntry notice, attempting GET query parameter fallback...");
@@ -149,6 +150,9 @@ app.post('/api/save-expense', async (req, res) => {
         const response = await fetch(`${GOOGLE_SCRIPT_URL}?${queryParams}`, { redirect: 'follow' });
         const rawText = await response.text();
         const data = JSON.parse(rawText);
+        if (data.status === 'success') {
+            statsCache.data = null;
+        }
 
         res.json(data);
     } catch (error) {

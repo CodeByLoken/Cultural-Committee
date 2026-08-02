@@ -590,14 +590,112 @@ function formatDateClean(dateStr) {
 }
 
 function renderExpensesTable() {
-  const container = document.getElementById('groupedExpensesContainer');
-  if (!container) return;
+    const container = document.getElementById('groupedExpensesContainer');
+    if (!container) return;
 
-  if (expensesList.length === 0) {
-    container.innerHTML = '<p class="center-text">No expenses recorded yet.</p>';
-    document.getElementById('tableTotalExpense').innerText = '₹0';
-    return;
-  }
+    // 1. Handle empty expenses list and reset both total displays to ₹0
+    if (expensesList.length === 0) {
+        container.innerHTML = '<p class="center-text">No expenses recorded yet.</p>';
+        document.getElementById('tableTotalExpense').innerText = '₹0';
+        if (document.getElementById('statExpenses')) {
+            document.getElementById('statExpenses').innerText = '₹0';
+        }
+        return;
+    }
+
+    const t = i18n[currentLang] || i18n.en;
+
+    const grouped = {};
+    let overallTotal = 0;
+
+    expensesList.forEach(item => {
+        const headerKey = item.header || "Common Expense";
+        if (!grouped[headerKey]) grouped[headerKey] = [];
+        grouped[headerKey].push(item);
+        overallTotal += Number(item.amount) || 0;
+    });
+
+    // 2. Sync overall total to BOTH the Ledger card and the Header Stat card!
+    document.getElementById('tableTotalExpense').innerText = `₹${overallTotal.toLocaleString('en-IN')}`;
+    if (document.getElementById('statExpenses')) {
+        document.getElementById('statExpenses').innerText = `₹${overallTotal.toLocaleString('en-IN')}`;
+    }
+
+    let html = '';
+
+    const svgGanesh = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="28" height="28" style="vertical-align: middle;"><g fill="none" stroke="#c1121f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M 50 10 L 40 25 L 60 25 Z" fill="#ffb703" stroke="#c1121f"/><path d="M 38 25 Q 50 18 62 25" stroke="#c1121f" stroke-width="2.5"/><circle cx="50" cy="18" r="2.5" fill="#c1121f"/><path d="M 38 32 C 15 25 15 52 38 52" fill="#fffdf5"/><path d="M 62 32 C 85 25 85 52 62 52" fill="#fffdf5"/><path d="M 38 32 Q 50 35 62 32 C 62 48 55 58 52 68 C 50 75 42 78 40 73 C 38 68 46 64 47 58 C 48 52 38 48 38 32 Z" fill="#fffdf5"/><path d="M 46 34 L 54 34 M 45 37 L 55 37 M 47 40 L 53 40" stroke="#c1121f" stroke-width="2"/><circle cx="50" cy="43" r="1.5" fill="#ffb703" stroke="none"/><circle cx="39" cy="71" r="3.5" fill="#ffb703" stroke="#c1121f" stroke-width="1.5"/></g></svg>`;
+    const svgFlag = `<svg viewBox="0 0 36 24" width="28" height="20" style="vertical-align: middle;"><rect width="36" height="8" fill="#FF9933"/><rect y="8" width="36" height="8" fill="#FFFFFF"/><rect y="16" width="36" height="8" fill="#138808"/><circle cx="18" cy="12" r="3" fill="none" stroke="#000080" stroke-width="0.8"/></svg>`;
+    const svgMatki = `<svg viewBox="0 0 36 36" width="28" height="28" style="vertical-align: middle;"><path d="M 8 14 C 8 30 28 30 28 14 C 28 10 8 10 8 14 Z" fill="#fb8500" stroke="#780000" stroke-width="2"/><ellipse cx="18" cy="11" rx="9" ry="3" fill="#ffea00"/><path d="M 14 8 Q 18 2 22 8" stroke="#2a9d8f" stroke-width="2" fill="none"/></svg>`;
+    const svgDandiya = `<svg viewBox="0 0 36 36" width="28" height="28" style="vertical-align: middle;"><line x1="6" y1="30" x2="30" y2="6" stroke="#c1121f" stroke-width="4" stroke-linecap="round"/><line x1="6" y1="6" x2="30" y2="30" stroke="#ffb703" stroke-width="4" stroke-linecap="round"/><circle cx="18" cy="18" r="4" fill="#2a9d8f"/></svg>`;
+    const svgChakra = `<svg viewBox="0 0 36 36" width="28" height="28" style="vertical-align: middle;"><circle cx="18" cy="18" r="14" fill="none" stroke="#003049" stroke-width="2.5"/><circle cx="18" cy="18" r="2.5" fill="#003049"/><path d="M 18 4 L 18 32 M 4 18 L 32 18 M 8 8 L 28 28 M 8 28 L 28 8" stroke="#003049" stroke-width="1.2"/></svg>`;
+    const svgHoli = `<svg viewBox="0 0 36 36" width="28" height="28" style="vertical-align: middle;"><path d="M 4 22 C 4 30 16 30 16 22 Z" fill="#e63946"/><path d="M 20 22 C 20 30 32 30 32 22 Z" fill="#ffb703"/><path d="M 12 12 C 12 20 24 20 24 12 Z" fill="#2a9d8f"/></svg>`;
+
+    const icons = {
+        "Ganesh Chaturthi Utsav": svgGanesh,
+        "15th August (Independence Day)": svgFlag,
+        "Janmashtami (Dahi Handi)": svgMatki,
+        "Navratri Festival": svgDandiya,
+        "26th January (Republic Day)": svgChakra,
+        "Holi Festival": svgHoli,
+        "Common Expense": "📦"
+    };
+
+    for (const category in grouped) {
+        const items = grouped[category];
+        const categoryTitle = t.expHeaders[category] || category;
+        const categoryIcon = icons[category] || "📦";
+
+        let subtotal = 0;
+
+        html += `
+      <div class="category-expense-card">
+        <div class="category-header">
+          <div class="category-title">
+            <span class="cat-icon">${categoryIcon}</span>
+            <h4>${categoryTitle}</h4>
+          </div>
+          <button class="btn-print-sm" onclick="printCategoryTable('${category.replace(/'/g, "\\'")}')">🖨️ Print Statement</button>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="data-table" id="table-${category.replace(/[^a-zA-Z0-9]/g, '')}">
+            <thead>
+              <tr>
+                <th style="width: 15%;">${t.tableCols.date}</th>
+                <th style="width: 40%;">${t.tableCols.summary}</th>
+                <th style="width: 25%;">${t.tableCols.vendor}</th>
+                <th style="width: 20%;">${t.tableCols.amount}</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+        items.forEach(row => {
+            const amt = Number(row.amount) || 0;
+            subtotal += amt;
+            html += `<tr>
+        <td class="nowrap">${formatDateClean(row.date)}</td>
+        <td>${row.summary}</td>
+        <td>${row.vendor}</td>
+        <td><strong>₹${amt.toLocaleString('en-IN')}</strong></td>
+      </tr>`;
+        });
+
+        html += `
+            </tbody>
+            <tfoot>
+              <tr class="subtotal-row">
+                <td colspan="3" class="right-text"><strong>Subtotal (${categoryTitle}):</strong></td>
+                <td><strong>₹${subtotal.toLocaleString('en-IN')}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    `;
+    }
+
+    container.innerHTML = html;
+}
 
   const t = i18n[currentLang] || i18n.en;
   
