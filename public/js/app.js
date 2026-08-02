@@ -509,42 +509,56 @@ function resetForm() {
 
 /* EXPENSES MODULE API & LOGIC */
 async function saveExpense() {
-  const btn = document.getElementById('expSaveBtn');
-  const msg = document.getElementById('expStatusMsg');
-  btn.disabled = true;
+    const btn = document.getElementById('expSaveBtn');
+    const btnText = document.getElementById('expSaveBtnText');
+    const msg = document.getElementById('expStatusMsg');
 
-  const payload = {
-    header: document.getElementById('expHeader').value,
-    date: document.getElementById('expDate').value,
-    summary: document.getElementById('expSummary').value.trim(),
-    vendor: document.getElementById('expVendor').value.trim(),
-    amount: document.getElementById('expAmount').value.trim(),
-    createdBy: loggedInUser
-  };
+    // 1. Instantly disable button and show loading state
+    btn.disabled = true;
+    btn.style.opacity = "0.6";
+    const originalButtonText = btnText.innerText;
+    btnText.innerText = "⏳ Saving Expense... Please Wait...";
 
-  try {
-    const res = await fetch('/api/save-expense', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
+    const payload = {
+        header: document.getElementById('expHeader').value,
+        date: document.getElementById('expDate').value,
+        summary: document.getElementById('expSummary').value.trim(),
+        vendor: document.getElementById('expVendor').value.trim(),
+        amount: document.getElementById('expAmount').value.trim(),
+        createdBy: loggedInUser
+    };
 
-    if (data.status === 'success') {
-      msg.className = "status-msg status-success";
-      msg.innerText = "✓ Expense recorded successfully!";
-      document.getElementById('expSummary').value = '';
-      document.getElementById('expVendor').value = '';
-      document.getElementById('expAmount').value = '';
-      fetchExpenses();
-      fetchStats();
-    } else { throw new Error(data.message); }
-  } catch (err) {
-    msg.className = "status-msg status-error";
-    msg.innerText = "Error saving expense: " + err.message;
-  } finally {
-    btn.disabled = false;
-  }
+    try {
+        const res = await fetch('/api/save-expense', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            msg.className = "status-msg status-success";
+            msg.innerText = "✓ Expense recorded successfully!";
+
+            // Clear input fields
+            document.getElementById('expSummary').value = '';
+            document.getElementById('expVendor').value = '';
+            document.getElementById('expAmount').value = '';
+
+            fetchExpenses();
+            fetchStats();
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (err) {
+        msg.className = "status-msg status-error";
+        msg.innerText = "Error saving expense: " + err.message;
+    } finally {
+        // 2. Re-enable the button once finished (success or fail)
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btnText.innerText = originalButtonText;
+    }
 }
 
 async function fetchExpenses() {
