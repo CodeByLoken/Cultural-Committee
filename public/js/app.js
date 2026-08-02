@@ -190,9 +190,9 @@ function handleLogin() {
                 el.style.display = 'none';
             }
         });
-
+        document.getElementById('expenseStatCard').style.display = 'flex';
         if (isAdmin) {
-            document.getElementById('expenseStatCard').style.display = 'flex';
+            
             fetchExpenses();
         }
     } else {
