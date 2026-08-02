@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="80" height="80">
+  <g fill="none" stroke="#d90429" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Crown / Mukut -->
+    <path d="M 50 10 L 40 25 L 60 25 Z" fill="#ffb703" stroke="#d90429" />
+    <path d="M 38 25 Q 50 18 62 25" stroke="#d90429" stroke-width="2.5"/>
+    <circle cx="50" cy="18" r="2.5" fill="#d90429"/>
+    
+    <!-- Ears -->
+    <path d="M 38 32 C 15 25 15 52 38 52" fill="#fffdf5" />
+    <path d="M 62 32 C 85 25 85 52 62 52" fill="#fffdf5" />
+    
+    <!-- Head & Trunk -->
+    <path d="M 38 32 Q 50 35 62 32 C 62 48 55 58 52 68 C 50 75 42 78 40 73 C 38 68 46 64 47 58 C 48 52 38 48 38 32 Z" fill="#fffdf5" />
+    
+    <!-- Tika / Tilak -->
+    <path d="M 46 34 L 54 34 M 45 37 L 55 37 M 47 40 L 53 40" stroke="#d90429" stroke-width="2" />
+    <circle cx="50" cy="43" r="1.5" fill="#ffb703" stroke="none" />
+    
+    <!-- Modak / Laddu in Trunk -->
+    <circle cx="39" cy="71" r="3.5" fill="#ffb703" stroke="#d90429" stroke-width="1.5" />
+  </g>
+</svg>

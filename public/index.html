@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Purvanchal Ganeshotsav Mandal - Receipt & Expense Portal</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Tiro+Devanagari+Marathi:ital@0;1&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- DEVOTIONAL LOGIN SCREEN -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-ganesh">
+        <img src="/assets/ganesh.svg" alt="Ganesh Ji" width="75" height="75" />
+      </div>
+      <div class="devotional-mantra">॥ श्री गणेशाय नमः ॥</div>
+      <h2>Purvanchal Ganeshotsav Mandal</h2>
+      <p class="subtitle">Kesnand, Tal. Haveli, Dist. Pune • 2026</p>
+      
+      <div class="input-group">
+        <label>Select Representative</label>
+        <select id="loginUserSelect">
+          <option value="" disabled selected>-- Loading Users... --</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label>Security PIN (4-Digit PIN)</label>
+        <input type="password" id="loginPin" placeholder="••••" maxlength="4" inputmode="numeric" />
+      </div>
+
+      <button class="btn-primary-glow" onclick="handleLogin()">Login</button>
+      <div class="login-err" id="loginErr">Invalid Security PIN!</div>
+    </div>
+  </div>
+
+  <!-- MAIN APP WRAPPER -->
+  <div class="main-wrapper" id="mainWrapper" style="display: none;">
+    
+    <!-- TOP HEADER BAR -->
+    <header class="top-header">
+      <div class="brand-title">
+        <img src="/assets/ganesh.svg" alt="Ganesh" class="header-ganesh" width="45" height="45" />
+        <div>
+          <div class="top-mantra">॥ श्री गणेशाय नमः ॥</div>
+          <h1>Purvanchal Ganeshotsav Mandal</h1>
+          <p>Kesnand, Tal. Haveli, Dist. Pune 412 207</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <div class="user-chip">
+          <span class="avatar">👤</span>
+          <span id="activeUserName" class="name">-</span>
+          <span id="userRoleBadge" class="role-tag">User</span>
+          <button class="logout-btn" onclick="handleLogout()" title="Logout">🚪</button>
+        </div>
+
+        <div class="lang-chip">
+          <span>🌐</span>
+          <select id="langSelect" onchange="changeLanguage()">
+            <option value="en" selected>English</option>
+            <option value="mr">मराठी</option>
+            <option value="hi">हिंदी</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <!-- DASHBOARD STATS -->
+    <section class="stats-container">
+      <div class="stat-card gold">
+        <div class="stat-icon">💰</div>
+        <div>
+          <span class="stat-label" id="lblStatAmount">Total Collection</span>
+          <h3 class="stat-value" id="statAmount">₹0</h3>
+        </div>
+      </div>
+
+      <div class="stat-card red">
+        <div class="stat-icon">📜</div>
+        <div>
+          <span class="stat-label" id="lblStatReceipts">Total Receipts</span>
+          <h3 class="stat-value" id="statReceipts">0</h3>
+        </div>
+      </div>
+
+      <div class="stat-card orange" id="expenseStatCard" style="display: none;">
+        <div class="stat-icon">💸</div>
+        <div>
+          <span class="stat-label" id="lblStatExpense">Total Expenses</span>
+          <h3 class="stat-value" id="statExpenses">₹0</h3>
+        </div>
+      </div>
+
+      <div class="stat-card teal">
+        <div class="stat-icon">👨‍👩‍👧‍👦</div>
+        <div>
+          <span class="stat-label" id="lblStatMembers">Total Members</span>
+          <h3 class="stat-value" id="statMembers">0</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" id="tabCreateBtn" onclick="switchTab('create')">📝 New Receipt</button>
+      <button class="tab-btn admin-only" id="tabExpenseBtn" onclick="switchTab('expense')" style="display: none;">💸 Manage Expenses (Admin)</button>
+      <button class="tab-btn" id="tabSearchBtn" onclick="switchTab('search')">🔎 Search Receipts</button>
+    </nav>
+
+    <!-- TAB 1: RECEIPT ENTRY FORM -->
+    <div class="tab-content active" id="tabCreate">
+      <div class="single-column-layout">
+        
+        <div class="card form-card">
+          <div class="card-header">
+            <h2 id="lblFormTitle">Fill Receipt Details</h2>
+          </div>
+
+          <form id="receiptForm" onsubmit="event.preventDefault(); generateAndSave();">
+            <div class="form-group">
+              <label id="lblFormName">Mr. / Mrs. (Full Name) <span class="required">*</span></label>
+              <input type="text" id="name" required placeholder="e.g. Lokendra Singh Parmar" />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label id="lblFormWhatsapp">WhatsApp Number <span class="required">*</span></label>
+                <input type="tel" id="whatsapp" required maxlength="10" inputmode="numeric" placeholder="9876543210" oninput="validateWhatsAppRealtime()" />
+                <small id="waValidationMsg" class="input-hint"></small>
+              </div>
+
+              <div class="form-group">
+                <label id="lblFormFlat">Flat Number <span class="required">*</span></label>
+                <input type="text" id="flat" required placeholder="A-608" oninput="validateFlatRealtime()" />
+                <small id="flatValidationMsg" class="input-hint"></small>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label id="lblFormAmount">Contribution Amount (₹) <span class="required">*</span></label>
+                <input type="number" id="amount" required placeholder="1000" oninput="handleAmountInput()" />
+              </div>
+
+              <div class="form-group">
+                <label id="lblFormFamily">No. of Family Members <span class="required">*</span></label>
+                <input type="number" id="familyCount" required placeholder="4" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label id="lblFormWords">Amount in Words</label>
+              <input type="text" id="amountWords" readonly placeholder="Rupees Only" />
+            </div>
+
+            <div class="form-group">
+              <label id="lblFormMode">Payment Mode</label>
+              <select id="paymentMode">
+                <option value="UPI">Online (UPI)</option>
+                <option value="Cash">Cash</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-submit-glow" id="saveBtn">
+              <span id="saveBtnText">Save & Generate Receipt</span>
+            </button>
+            <div id="statusMsg" class="status-msg"></div>
+          </form>
+
+          <!-- SUCCESS ACTION CARD -->
+          <div class="action-box card" id="actionBox" style="display: none;">
+            <div class="success-banner">✓ Receipt Saved & Drive PDF Generated!</div>
+            <div class="receipt-summary-pill" id="receiptSummaryPill">
+              Receipt No: <strong id="resReceiptNo">-</strong> | Name: <span id="resName">-</span>
+            </div>
+            
+            <div class="action-buttons-grid">
+              <button class="btn-wa" id="waBtn" onclick="sendWhatsApp()">💬 Send WhatsApp Receipt Link</button>
+              <a class="btn-view-pdf" id="viewPdfBtn" href="#" target="_blank">📄 View Google Drive PDF</a>
+              <button class="btn-reset" onclick="resetForm()">➕ Register New Entry</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 2: ADMIN EXPENSES MANAGEMENT MODULE -->
+    <div class="tab-content admin-only" id="tabExpense" style="display: none;">
+      <div class="content-grid">
+        
+        <!-- EXPENSE ENTRY FORM -->
+        <div class="card form-card">
+          <div class="card-header">
+            <h2 id="lblExpTitle">💸 Record New Expense</h2>
+            <span class="badge admin-badge">Admin Mode</span>
+          </div>
+
+          <form id="expenseForm" onsubmit="event.preventDefault(); saveExpense();">
+            <div class="form-group">
+              <label id="lblExpHeader">1) Expense Category / Event <span class="required">*</span></label>
+              <select id="expHeader" required>
+                <option value="Ganesh Chaturthi Utsav" selected>Ganesh Chaturthi Utsav</option>
+                <option value="15th August (Independence Day)">15th August (Independence Day)</option>
+                <option value="Janmashtami (Dahi Handi)">Janmashtami (Dahi Handi)</option>
+                <option value="Navratri Festival">Navratri Festival</option>
+                <option value="26th January (Republic Day)">26th January (Republic Day)</option>
+                <option value="Holi Festival">Holi Festival</option>
+                <option value="Common Expense">Common Expenses</option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label id="lblExpDate">2) Expense Date <span class="required">*</span></label>
+                <input type="date" id="expDate" required />
+              </div>
+
+              <div class="form-group">
+                <label id="lblExpAmt">5) Amount (₹) <span class="required">*</span></label>
+                <input type="number" id="expAmount" required placeholder="5000" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label id="lblExpVendor">3) Vendor / Payee Name <span class="required">*</span></label>
+              <input type="text" id="expVendor" required placeholder="e.g. Mauli Decorators" />
+            </div>
+
+            <div class="form-group">
+              <label id="lblExpSummary">4) Description / Summary <span class="required">*</span></label>
+              <input type="text" id="expSummary" required placeholder="e.g. Mandap & Lighting Setup" />
+            </div>
+
+            <button type="submit" class="btn-submit-glow" id="expSaveBtn">
+              <span id="expSaveBtnText">Save Expense Record</span>
+            </button>
+            <div id="expStatusMsg" class="status-msg"></div>
+          </form>
+        </div>
+
+        <!-- CATEGORY-WISE EXPENSES LEDGER -->
+        <div class="card expense-table-card">
+          <div class="card-header">
+            <h3 id="lblExpLedgerTitle">📊 Category-Wise Expenses Ledger</h3>
+            <div style="font-weight: bold; color: var(--primary-red);">
+              Overall Total: <span id="tableTotalExpense">₹0</span>
+            </div>
+          </div>
+
+          <div class="grouped-expenses-container" id="groupedExpensesContainer">
+            <p class="center-text">Loading Expenses...</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 3: SEARCH RECORDS -->
+    <div class="tab-content" id="tabSearch" style="display: none;">
+      <div class="card search-card">
+        <div class="card-header">
+          <h2>Search Receipt by Flat Number</h2>
+        </div>
+
+        <div class="search-bar">
+          <input type="text" id="searchFlat" placeholder="Enter Flat Number (e.g. A-608)" onkeydown="if(event.key==='Enter') searchRecords()" />
+          <button class="btn-primary-glow" onclick="searchRecords()">Search</button>
+        </div>
+
+        <div class="search-table-container" id="searchResults">
+          <p class="placeholder-text">Enter flat number above to search...</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>
