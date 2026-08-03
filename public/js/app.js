@@ -818,7 +818,12 @@ function printExpenseStatement() {
 async function searchRecords() {
     const query = document.getElementById('searchFlat').value.trim();
     const container = document.getElementById('searchResults');
-    if (!query) return alert('Enter Flat Number.');
+
+    // If empty, clear results cleanly without popping up a browser alert
+    if (!query) {
+        container.innerHTML = `<p class="placeholder-text">Enter flat number above to search...</p>`;
+        return;
+    }
 
     container.innerHTML = `<p style="color:#666;">Searching...</p>`;
     try {
