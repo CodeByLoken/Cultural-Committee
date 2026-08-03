@@ -5,6 +5,8 @@ const path = require('path'); // <--- THIS WAS MISSING
 const { getAmountInWords } = require('./services/numberToWords');
 const { generateReceiptPDF } = require('./services/pdfService');
 
+
+
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -13,6 +15,14 @@ app.use(express.static('public')); // Keeps checking the public folder if it exi
 app.use('/css', express.static(path.join(__dirname, 'css'))); // Fallback for CSS
 app.use('/js', express.static(path.join(__dirname, 'js'))); // Fallback for JS
 app.use('/assets', express.static(path.join(__dirname, 'assets'))); // Fallback for Images
+
+const { Pool } = require('pg');
+
+// Connect to PostgreSQL Database
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false } // Required for cloud hosted DBs
+});
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -29,45 +39,39 @@ app.get('/api/stats', async (req, res) => {
     try {
         const flatQuery = req.query.flat;
 
-        // 1. Search query (Flat Search) - Bypass cache
+        // Search Receipts by Flat Number
         if (flatQuery) {
-            const response = await fetch(`${GOOGLE_SCRIPT_URL}?flat=${encodeURIComponent(flatQuery)}`, { redirect: 'follow' });
-            const rawText = await response.text();
-            return res.json(JSON.parse(rawText));
+            const searchRes = await pool.query(
+                `SELECT receipt_no AS "receiptNo", date, name, flat, amount, whatsapp, 
+                        collected_by AS "collectedBy", image_url AS "imageUrl" 
+                 FROM receipts 
+                 WHERE LOWER(flat) = LOWER($1) 
+                 ORDER BY receipt_no DESC`,
+                [flatQuery]
+            );
+            return res.json({ results: searchRes.rows });
         }
 
-        // 2. Return fresh cached data if available (under 5 mins old)
-        if (statsCache.data && (Date.now() - statsCache.lastFetch < CACHE_TTL)) {
-            return res.json(statsCache.data);
-        }
+        // Parallel Query Execution for Dashboard Metrics (~10ms)
+        const [collectionsRes, expensesRes, usersRes] = await Promise.all([
+            pool.query('SELECT COALESCE(SUM(amount), 0) AS total_amount, COUNT(receipt_no) AS total_receipts, COALESCE(SUM(family_count), 0) AS total_members FROM receipts'),
+            pool.query('SELECT COALESCE(SUM(amount), 0) AS total_expenses FROM expenses'),
+            pool.query('SELECT name, pin, role FROM users ORDER BY name ASC')
+        ]);
 
-        // 3. Fetch from Google Apps Script
-        const response = await fetch(GOOGLE_SCRIPT_URL, { redirect: 'follow' });
-        const rawText = await response.text();
+        const stats = collectionsRes.rows[0];
+        const expenses = expensesRes.rows[0];
 
-        // Safety Check: Make sure Google returned valid JSON
-        if (rawText && rawText.trim().startsWith('{')) {
-            const data = JSON.parse(rawText);
-            statsCache = { data, lastFetch: Date.now() }; // Update Cache
-            return res.json(data);
-        }
-
-        // 4. FALLBACK: If Google Apps Script fails or returns empty, serve old cache instead of hanging!
-        if (statsCache.data) {
-            console.warn("Google Apps Script response invalid, serving stale cache fallback.");
-            return res.json(statsCache.data);
-        }
-
-        throw new Error("Invalid response received from Google Apps Script.");
+        res.json({
+            totalAmount: Number(stats.total_amount),
+            totalReceipts: Number(stats.total_receipts),
+            totalMembers: Number(stats.total_members),
+            totalExpenses: Number(expenses.total_expenses),
+            users: usersRes.rows
+        });
 
     } catch (error) {
         console.error("Stats API Error:", error.message);
-
-        // Fallback: If cache exists, return it so login screen doesn't break
-        if (statsCache.data) {
-            return res.json(statsCache.data);
-        }
-
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
@@ -81,48 +85,28 @@ app.get('/api/amount-words', (req, res) => {
 
 // Save Receipt & Backend PDF / Image Generation
 app.post('/api/save-receipt', async (req, res) => {
+    const { name, whatsapp, flat, amount, familyCount, paymentMode, collectedBy, lang } = req.body;
+    const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const amountWords = getAmountInWords(amount, lang);
+
+    const client = await pool.connect();
+
     try {
-        const { name, whatsapp, flat, amount, familyCount, paymentMode, collectedBy, lang } = req.body;
-        const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        const amountWords = getAmountInWords(amount, lang);
+        await client.query('BEGIN');
 
-        let receiptNo = "";
+        // Insert into PostgreSQL - Automatically assigns 100% unique receipt_no
+        const insertQuery = `
+            INSERT INTO receipts (date, name, whatsapp, flat, amount, amount_words, family_count, payment_mode, collected_by)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING receipt_no;
+        `;
+        const values = [today, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy];
+        const dbRes = await client.query(insertQuery, values);
 
-        try {
-            const sheetRes = await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'saveEntry', name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, today }),
-                redirect: 'follow'
-            });
-            const rawText = await sheetRes.text();
-            const sheetData = JSON.parse(rawText);
-            if (sheetData.status === 'success') {
-                receiptNo = sheetData.receiptNo;
-                statsCache.data = null;
-            }
-        } catch (e) {
-            console.warn("POST saveEntry notice, attempting GET query parameter fallback...");
-        }
+        const receiptNo = dbRes.rows[0].receipt_no;
+        await client.query('COMMIT');
 
-        if (!receiptNo) {
-            const queryParams = new URLSearchParams({
-                action: 'saveEntry',
-                name, whatsapp, flat, amount, familyCount, paymentMode, collectedBy, today
-            }).toString();
-
-            const fallbackRes = await fetch(`${GOOGLE_SCRIPT_URL}?${queryParams}`, { redirect: 'follow' });
-            const fallbackText = await fallbackRes.text();
-            const fallbackData = JSON.parse(fallbackText);
-
-            if (fallbackData.status === 'success') {
-                receiptNo = fallbackData.receiptNo;
-            } else {
-                throw new Error(fallbackData.message || 'Sheet save entry failed');
-            }
-        }
-
-        // Backend PDF/PNG Generation via Puppeteer
+        // Optional: Generate PDF/PNG with Puppeteer & upload to Drive
         let imageUrl = "";
         try {
             const pdfResult = await generateReceiptPDF({
@@ -130,20 +114,27 @@ app.post('/api/save-receipt', async (req, res) => {
             });
 
             if (pdfResult && pdfResult.imageBase64) {
-                const imgRes = await fetch(GOOGLE_SCRIPT_URL, {
+                const driveRes = await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({ action: 'saveImage', receiptNo, flat, imageBase64: pdfResult.imageBase64 }),
                     redirect: 'follow'
                 });
-                const rawText = await imgRes.text();
-                const imgData = JSON.parse(rawText);
-                imageUrl = imgData.imageUrl || "";
+                const driveData = JSON.parse(await driveRes.text());
+                imageUrl = driveData.imageUrl || "";
+
+                if (imageUrl) {
+                    await pool.query('UPDATE receipts SET image_url = $1 WHERE receipt_no = $2', [imageUrl, receiptNo]);
+                }
             }
         } catch (pdfErr) {
-            console.error("Backend PDF generation notice:", pdfErr);
+            console.error("PDF/Drive Notice:", pdfErr.message);
         }
 
+        // Asynchronous background mirror to Google Sheets (non-blocking)
+        syncToGoogleSheetAsync({ action: 'saveEntry', receiptNo, today, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, imageUrl });
+
+        // Immediate response back to user
         res.json({
             status: 'success',
             receiptNo,
@@ -151,8 +142,13 @@ app.post('/api/save-receipt', async (req, res) => {
             amountWords,
             imageUrl
         });
+
     } catch (error) {
+        await client.query('ROLLBACK');
+        console.error("Save Receipt Error:", error);
         res.status(500).json({ status: 'error', message: error.message });
+    } finally {
+        client.release();
     }
 });
 
@@ -161,20 +157,19 @@ app.post('/api/save-expense', async (req, res) => {
     try {
         const { header, date, summary, vendor, amount, createdBy } = req.body;
 
-        const queryParams = new URLSearchParams({
-            action: 'saveExpense',
-            header, date, summary, vendor, amount, createdBy
-        }).toString();
+        const insertQuery = `
+            INSERT INTO expenses (header, date, summary, vendor, amount, created_by)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id;
+        `;
+        await pool.query(insertQuery, [header, date, summary, vendor, amount, createdBy]);
 
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?${queryParams}`, { redirect: 'follow' });
-        const rawText = await response.text();
-        const data = JSON.parse(rawText);
-        if (data.status === 'success') {
-            statsCache.data = null;
-        }
+        // Background sync to Google Sheets
+        syncToGoogleSheetAsync({ action: 'saveExpense', header, date, summary, vendor, amount, createdBy });
 
-        res.json(data);
+        res.json({ status: 'success' });
     } catch (error) {
+        console.error("Save Expense Error:", error);
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
@@ -182,14 +177,25 @@ app.post('/api/save-expense', async (req, res) => {
 // Fetch All Expenses List
 app.get('/api/get-expenses', async (req, res) => {
     try {
-        const response = await fetch(`${GOOGLE_SCRIPT_URL}?action=getExpenses`, { redirect: 'follow' });
-        const rawText = await response.text();
-        const data = JSON.parse(rawText);
-        res.json(data);
+        const result = await pool.query(
+            `SELECT header, date, summary, vendor, amount, created_by AS "createdBy" 
+             FROM expenses 
+             ORDER BY id DESC`
+        );
+        res.json({ expenses: result.rows });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
     }
 });
+
+// Background Sync Helper
+function syncToGoogleSheetAsync(payload) {
+    fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).catch(err => console.error("Async Sheet Sync Error:", err.message));
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
