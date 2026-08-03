@@ -125,4 +125,3 @@ async function importLegacyData() {
     }
 }
 importLegacyData();
-test();

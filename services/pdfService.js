@@ -145,4 +145,3 @@ async function generateReceiptPDF(data) {
 }
 
 module.exports = { generateReceiptPDF };
-test();
