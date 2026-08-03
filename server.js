@@ -84,6 +84,7 @@ app.get('/api/amount-words', (req, res) => {
 });
 
 // Save Receipt & Backend PDF / Image Generation
+// Step 1: Save Receipt Data Only (20ms max)
 app.post('/api/save-receipt', async (req, res) => {
     const { name, whatsapp, flat, amount, familyCount, paymentMode, collectedBy, lang } = req.body;
     const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -94,7 +95,6 @@ app.post('/api/save-receipt', async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Insert into PostgreSQL - Automatically assigns 100% unique receipt_no
         const insertQuery = `
             INSERT INTO receipts (date, name, whatsapp, flat, amount, amount_words, family_count, payment_mode, collected_by)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -106,49 +106,57 @@ app.post('/api/save-receipt', async (req, res) => {
         const receiptNo = dbRes.rows[0].receipt_no;
         await client.query('COMMIT');
 
-        // Optional: Generate PDF/PNG with Puppeteer & upload to Drive
-        let imageUrl = "";
-        try {
-            const pdfResult = await generateReceiptPDF({
-                receiptNo, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, today, lang
-            });
-
-            if (pdfResult && pdfResult.imageBase64) {
-                const driveRes = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'saveImage', receiptNo, flat, imageBase64: pdfResult.imageBase64 }),
-                    redirect: 'follow'
-                });
-                const driveData = JSON.parse(await driveRes.text());
-                imageUrl = driveData.imageUrl || "";
-
-                if (imageUrl) {
-                    await pool.query('UPDATE receipts SET image_url = $1 WHERE receipt_no = $2', [imageUrl, receiptNo]);
-                }
-            }
-        } catch (pdfErr) {
-            console.error("PDF/Drive Notice:", pdfErr.message);
-        }
-
-        // Asynchronous background mirror to Google Sheets (non-blocking)
-        syncToGoogleSheetAsync({ action: 'saveEntry', receiptNo, today, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, imageUrl });
-
-        // Immediate response back to user
-        res.json({
+        // Immediately respond to frontend!
+        return res.json({
             status: 'success',
             receiptNo,
             today,
             amountWords,
-            imageUrl
+            flat,
+            name,
+            amount,
+            whatsapp
         });
 
     } catch (error) {
         await client.query('ROLLBACK');
         console.error("Save Receipt Error:", error);
-        res.status(500).json({ status: 'error', message: error.message });
+        return res.status(500).json({ status: 'error', message: error.message });
     } finally {
         client.release();
+    }
+});
+
+// Step 2: Dedicated Image Generation Endpoint
+app.post('/api/generate-receipt-image', async (req, res) => {
+    const { receiptNo, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, today, lang } = req.body;
+
+    try {
+        const pdfResult = await generateReceiptPDF({
+            receiptNo, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, today, lang
+        });
+
+        let imageUrl = "";
+        if (pdfResult && pdfResult.imageBase64) {
+            const driveRes = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'saveImage', receiptNo, flat, imageBase64: pdfResult.imageBase64 }),
+                redirect: 'follow'
+            });
+            const driveData = JSON.parse(await driveRes.text());
+            imageUrl = driveData.imageUrl || "";
+
+            if (imageUrl) {
+                await pool.query('UPDATE receipts SET image_url = $1 WHERE receipt_no = $2', [imageUrl, receiptNo]);
+            }
+        }
+
+        return res.json({ status: 'success', imageUrl });
+
+    } catch (err) {
+        console.error("Image generation error:", err.message);
+        return res.status(500).json({ status: 'error', message: err.message });
     }
 });
 

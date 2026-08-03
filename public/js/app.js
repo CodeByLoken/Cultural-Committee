@@ -793,3 +793,66 @@ function resendWA(receiptNo, date, name, flat, amount, collectedBy, whatsapp, im
     const finalWa = formattedWa.length === 10 ? '91' + formattedWa : formattedWa;
     window.open(`https://wa.me/${finalWa}?text=${encodeURIComponent(text)}`, '_blank');
 }
+
+async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const submitBtn = document.getElementById('saveBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'Saving...';
+
+    const formData = getFormData();
+
+    try {
+        // 1. FAST SAVE TO DB (~20ms)
+        const saveRes = await fetch('/api/save-receipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const saveData = await saveRes.json();
+
+        if (saveData.status !== 'success') {
+            throw new Error(saveData.message || 'Failed to save');
+        }
+
+        // 2. Clear Form & Show Success Modal Immediately
+        resetForm(); // Form is clear for the next entry!
+        showModal(saveData); // Displays Receipt No, Name, Amount
+
+        // 3. Request Drive Link in Background for WhatsApp Share Button
+        loadReceiptImageLink(saveData);
+
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Save & Generate Receipt';
+    }
+}
+
+async function loadReceiptImageLink(receiptData) {
+    const whatsappBtn = document.getElementById('whatsappBtn');
+    if (whatsappBtn) {
+        whatsappBtn.innerText = 'Generating Share Link...';
+        whatsappBtn.disabled = true;
+    }
+
+    try {
+        const imgRes = await fetch('/api/generate-receipt-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(receiptData)
+        });
+        const imgData = await imgRes.json();
+
+        if (imgData.status === 'success' && imgData.imageUrl) {
+            updateWhatsAppButton(receiptData, imgData.imageUrl);
+        } else {
+            setWhatsAppFallback(receiptData);
+        }
+    } catch (err) {
+        setWhatsAppFallback(receiptData);
+    }
+}
