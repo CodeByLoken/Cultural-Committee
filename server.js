@@ -85,6 +85,7 @@ app.get('/api/amount-words', (req, res) => {
 
 // Save Receipt & Backend PDF / Image Generation
 // Step 1: Save Receipt Data Only (20ms max)
+// 1. FAST DB SAVE
 app.post('/api/save-receipt', async (req, res) => {
     const { name, whatsapp, flat, amount, familyCount, paymentMode, collectedBy, lang } = req.body;
     const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -106,6 +107,9 @@ app.post('/api/save-receipt', async (req, res) => {
         const receiptNo = dbRes.rows[0].receipt_no;
         await client.query('COMMIT');
 
+        console.log(`[DB SUCCESS] Receipt #${receiptNo} created for ${name} (${flat})`);
+
+        // Send full receipt payload back to frontend
         return res.json({
             status: 'success',
             receiptNo,
@@ -116,54 +120,61 @@ app.post('/api/save-receipt', async (req, res) => {
             amount,
             whatsapp,
             paymentMode,
-            collectedBy
+            collectedBy,
+            lang: lang || 'mr'
         });
 
     } catch (error) {
-        await client.query('ROLLBACK');
-        console.error("Save Receipt Error:", error);
+        if (client) await client.query('ROLLBACK');
+        console.error("[DB ERROR] Save Receipt failed:", error.message);
         return res.status(500).json({ status: 'error', message: error.message });
     } finally {
-        client.release();
+        if (client) client.release();
     }
 });
 
-// Step 2: Dedicated Image Generation Endpoint
+// 2. IMAGE GENERATION & DRIVE UPLOAD
 app.post('/api/generate-receipt-image', async (req, res) => {
-    const { receiptNo, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, today, lang } = req.body;
+    const payload = req.body;
+    console.log(`[IMAGE START] Generating receipt image for #${payload.receiptNo}...`);
 
     try {
-        // Race condition: If Puppeteer or Google Drive takes > 12 seconds, abort safely
-        const imagePromise = (async () => {
-            const pdfResult = await generateReceiptPDF({
-                receiptNo, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, today, lang
-            });
+        // Generate image buffer via Puppeteer
+        const pdfResult = await generateReceiptPDF(payload);
 
-            if (pdfResult && pdfResult.imageBase64) {
-                const driveRes = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ action: 'saveImage', receiptNo, flat, imageBase64: pdfResult.imageBase64 }),
-                    redirect: 'follow'
-                });
-                const driveData = JSON.parse(await driveRes.text());
-                return driveData.imageUrl || "";
-            }
-            return "";
-        })();
+        if (!pdfResult || !pdfResult.imageBase64) {
+            throw new Error("Puppeteer returned empty image buffer.");
+        }
 
-        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(""), 12000));
-        const imageUrl = await Promise.race([imagePromise, timeoutPromise]);
+        console.log(`[PUPPETEER OK] Screenshot captured for #${payload.receiptNo}. Sending to Google Drive...`);
+
+        // Upload to Google Apps Script
+        const driveRes = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'saveImage',
+                receiptNo: payload.receiptNo,
+                flat: payload.flat,
+                imageBase64: pdfResult.imageBase64
+            }),
+            redirect: 'follow'
+        });
+
+        const driveText = await driveRes.text();
+        const driveData = JSON.parse(driveText);
+        const imageUrl = driveData.imageUrl || "";
 
         if (imageUrl) {
-            await pool.query('UPDATE receipts SET image_url = $1 WHERE receipt_no = $2', [imageUrl, receiptNo]);
+            console.log(`[DRIVE OK] Image URL generated: ${imageUrl}`);
+            await pool.query('UPDATE receipts SET image_url = $1 WHERE receipt_no = $2', [imageUrl, payload.receiptNo]);
             return res.json({ status: 'success', imageUrl });
         } else {
-            return res.status(500).json({ status: 'error', message: 'Image generation timed out or failed' });
+            throw new Error("Google Drive did not return a valid URL.");
         }
 
     } catch (err) {
-        console.error("Image generation error:", err.message);
+        console.error(`[IMAGE ERROR] Receipt #${payload.receiptNo} failed:`, err.message);
         return res.status(500).json({ status: 'error', message: err.message });
     }
 });

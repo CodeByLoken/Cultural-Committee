@@ -801,40 +801,101 @@ async function handleFormSubmit(e) {
     submitBtn.disabled = true;
     submitBtn.innerText = 'Saving Entry...';
 
-    const formData = getFormData();
+    // Collect input values
+    const payload = {
+        name: document.getElementById('name').value.trim(),
+        whatsapp: document.getElementById('whatsapp').value.trim(),
+        flat: document.getElementById('flat').value.trim(),
+        amount: document.getElementById('amount').value.trim(),
+        familyCount: document.getElementById('familyCount').value || "1",
+        paymentMode: document.getElementById('paymentMode').value,
+        collectedBy: currentUser.name || "Lokendra Singh Parmar",
+        lang: currentLanguage || 'mr'
+    };
 
     try {
-        // Step 1: Save to Database (~20ms)
+        // STEP 1: Fast Database Save
         const saveRes = await fetch('/api/save-receipt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData)
+            body: JSON.stringify(payload)
         });
 
         const saveData = await saveRes.json();
 
         if (saveData.status !== 'success') {
-            alert('Error saving receipt: ' + saveData.message);
+            alert('Error saving entry: ' + saveData.message);
             submitBtn.disabled = false;
             submitBtn.innerText = 'Save & Generate Receipt';
             return;
         }
 
-        // Step 2: Clear Form IMMEDIATELY to prevent duplicate submissions
+        // STEP 2: Clear Form & Reset Submit Button IMMEDIATELY
         resetForm();
         submitBtn.disabled = false;
         submitBtn.innerText = 'Save & Generate Receipt';
 
-        // Step 3: Show Modal with Disabled WhatsApp Button
-        showModalWithLoadingState(saveData);
+        // STEP 3: Show Modal with "Generating Link..." state
+        showModalWithLoader(saveData);
 
-        // Step 4: Fetch Image URL asynchronously
-        fetchImageUrlAndUpdateWhatsApp(saveData);
+        // STEP 4: Request Image URL from server
+        generateImageAndEnableWhatsApp(saveData);
 
     } catch (err) {
-        alert("Connection error: " + err.message);
+        alert("Network Error: " + err.message);
         submitBtn.disabled = false;
         submitBtn.innerText = 'Save & Generate Receipt';
+    }
+}
+
+function showModalWithLoader(data) {
+    document.getElementById('modalReceiptNo').innerText = `#${data.receiptNo}`;
+    document.getElementById('modalName').innerText = data.name;
+    document.getElementById('modalFlat').innerText = data.flat;
+    document.getElementById('modalAmount').innerText = `₹${data.amount}`;
+
+    const waBtn = document.getElementById('whatsappBtn');
+    waBtn.disabled = true;
+    waBtn.style.opacity = '0.6';
+    waBtn.innerHTML = `⏳ Generating WhatsApp Receipt Link...`;
+
+    document.getElementById('receiptModal').classList.add('active');
+}
+
+async function generateImageAndEnableWhatsApp(receiptData) {
+    const waBtn = document.getElementById('whatsappBtn');
+
+    try {
+        const imgRes = await fetch('/api/generate-receipt-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(receiptData)
+        });
+
+        const imgData = await imgRes.json();
+
+        if (imgData.status === 'success' && imgData.imageUrl) {
+            // Enable button with full WhatsApp link!
+            const message = `*Purvanchal Ganeshotsav Mandal*\n\nDear *${receiptData.name}* (Flat: ${receiptData.flat}),\nThank you for your donation of *₹${receiptData.amount}*.\n\nReceipt #${receiptData.receiptNo}\nView/Download Receipt: ${imgData.imageUrl}`;
+            const waUrl = `https://wa.me/91${receiptData.whatsapp}?text=${encodeURIComponent(message)}`;
+
+            waBtn.disabled = false;
+            waBtn.style.opacity = '1';
+            waBtn.innerHTML = `📲 Send Receipt on WhatsApp`;
+            waBtn.onclick = () => window.open(waUrl, '_blank');
+        } else {
+            throw new Error(imgData.message || "Failed to generate image URL");
+        }
+    } catch (err) {
+        console.warn("Drive image link fallback triggered:", err.message);
+        // Fallback: Enable WhatsApp button with text receipt if drive image upload timed out
+        const fallbackMsg = `*Purvanchal Ganeshotsav Mandal*\n\nDear *${receiptData.name}* (Flat: ${receiptData.flat}),\nThank you for your donation of *₹${receiptData.amount}*.\n\nReceipt #${receiptData.receiptNo}`;
+        const waUrl = `https://wa.me/91${receiptData.whatsapp}?text=${encodeURIComponent(fallbackMsg)}`;
+
+        waBtn.disabled = false;
+        waBtn.style.opacity = '1';
+        waBtn.innerHTML = `💬 Send Text Receipt on WhatsApp`;
+        waBtn.onclick = () => window.open(waUrl, '_blank');
     }
 }
 
