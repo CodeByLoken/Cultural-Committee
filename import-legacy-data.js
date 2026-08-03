@@ -124,5 +124,4 @@ async function importLegacyData() {
         process.exit(1);
     }
 }
-
 importLegacyData();
