@@ -177,12 +177,14 @@ function handleLogin() {
         loggedInUser = user;
         userRole = AUTHORIZED_USERS[user].role || 'user';
 
+        // 1. Update UI user badges
         document.getElementById('activeUserName').innerText = user;
         document.getElementById('loginOverlay').style.display = "none";
         document.getElementById('mainWrapper').style.display = "block";
         errDiv.style.display = "none";
         resetSessionTimer();
 
+        // 2. Set Admin vs User permissions
         const isAdmin = userRole === 'admin' || user.toLowerCase().includes('admin');
         document.getElementById('userRoleBadge').innerText = isAdmin ? 'Admin' : 'User';
         document.getElementById('userRoleBadge').style.background = isAdmin ? '#fb8500' : '#ffb703';
@@ -202,9 +204,28 @@ function handleLogin() {
         if (document.getElementById('expenseStatCard')) {
             document.getElementById('expenseStatCard').style.display = 'flex';
         }
+
+        // ==========================================
+        // FRESH SESSION RESET ON EVERY LOGIN
+        // ==========================================
+
+        // A. Reset form inputs & validation messages
+        resetForm();
+
+        // B. Clear security PIN input field from login screen
+        document.getElementById('loginPin').value = '';
+
+        // C. Always reset active tab view back to "New Receipt"
+        switchTab('create');
+
+        // D. Fetch fresh Dashboard Statistics (Total Collection, Receipts, Members, Expenses)
+        fetchStats();
+
+        // E. Fetch Expenses if logged in as Admin
         if (isAdmin) {
             fetchExpenses();
         }
+
     } else {
         errDiv.style.display = "block";
     }
