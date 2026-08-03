@@ -973,3 +973,5 @@ async function loadReceiptImageLink(receiptData) {
         setWhatsAppFallback(receiptData);
     }
 }
+
+test();
