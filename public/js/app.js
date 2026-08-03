@@ -177,14 +177,12 @@ function handleLogin() {
         loggedInUser = user;
         userRole = AUTHORIZED_USERS[user].role || 'user';
 
-        // 1. Update UI user badges
         document.getElementById('activeUserName').innerText = user;
         document.getElementById('loginOverlay').style.display = "none";
         document.getElementById('mainWrapper').style.display = "block";
         errDiv.style.display = "none";
         resetSessionTimer();
 
-        // 2. Set Admin vs User permissions
         const isAdmin = userRole === 'admin' || user.toLowerCase().includes('admin');
         document.getElementById('userRoleBadge').innerText = isAdmin ? 'Admin' : 'User';
         document.getElementById('userRoleBadge').style.background = isAdmin ? '#fb8500' : '#ffb703';
@@ -205,23 +203,11 @@ function handleLogin() {
             document.getElementById('expenseStatCard').style.display = 'flex';
         }
 
-        // ==========================================
-        // FRESH SESSION RESET ON EVERY LOGIN
-        // ==========================================
-
-        // A. Reset form inputs & validation messages
         resetForm();
-
-        // B. Clear security PIN input field from login screen
         document.getElementById('loginPin').value = '';
-
-        // C. Always reset active tab view back to "New Receipt"
         switchTab('create');
-
-        // D. Fetch fresh Dashboard Statistics (Total Collection, Receipts, Members, Expenses)
         fetchStats();
 
-        // E. Fetch Expenses if logged in as Admin
         if (isAdmin) {
             fetchExpenses();
         }
@@ -246,7 +232,7 @@ function switchTab(tabName) {
         return;
     }
 
-    const tabs = ['create', 'expense', 'search'];
+    const tabs = ['create', 'analytics', 'expense', 'search'];
     tabs.forEach(t => {
         const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}Btn`);
         const content = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
@@ -255,6 +241,10 @@ function switchTab(tabName) {
             content.style.display = t === tabName ? 'block' : 'none';
         }
     });
+
+    if (tabName === 'analytics') {
+        fetchAnalyticsData();
+    }
 }
 
 function setFormFreeze(isFrozen) {
@@ -424,7 +414,6 @@ async function generateAndSave() {
     };
 
     try {
-        // STEP 1: Fast Database Save (~20ms)
         const res = await fetch('/api/save-receipt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -435,7 +424,6 @@ async function generateAndSave() {
         if (result.status === 'success') {
             currentData = { ...payload, ...result };
 
-            // Show action box immediately with details logged
             document.getElementById('resReceiptNo').innerText = result.receiptNo;
             document.getElementById('resName').innerText = payload.name;
             document.getElementById('actionBox').style.display = 'block';
@@ -444,7 +432,6 @@ async function generateAndSave() {
             statusMsg.innerText = t.saveSuccessMsg;
             fetchStats();
 
-            // STEP 2: Trigger image generation in background & keep WA button disabled
             await triggerReceiptImageGeneration(currentData);
 
         } else {
@@ -462,7 +449,6 @@ async function triggerReceiptImageGeneration(receiptData) {
     const waBtn = document.getElementById('waBtn');
     const viewPdfBtn = document.getElementById('viewPdfBtn');
 
-    // 1. Keep WhatsApp & View PDF buttons STRICTLY DISABLED while generating
     if (waBtn) {
         waBtn.disabled = true;
         waBtn.style.opacity = '0.5';
@@ -474,7 +460,6 @@ async function triggerReceiptImageGeneration(receiptData) {
     }
 
     try {
-        // 2. Request Image Generation from Backend
         const imgRes = await fetch('/api/generate-receipt-image', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -484,16 +469,13 @@ async function triggerReceiptImageGeneration(receiptData) {
         const imgData = await imgRes.json();
 
         if (imgData.status === 'success' && imgData.imageUrl) {
-            // Save the valid Google Drive image URL
             currentData.imageUrl = imgData.imageUrl;
 
-            // Show Google Drive View Button
             if (viewPdfBtn) {
                 viewPdfBtn.href = imgData.imageUrl;
                 viewPdfBtn.style.display = 'inline-flex';
             }
 
-            // 3. ONLY NOW Enable the WhatsApp Button with the Image URL included
             if (waBtn) {
                 waBtn.disabled = false;
                 waBtn.style.opacity = '1';
@@ -506,7 +488,6 @@ async function triggerReceiptImageGeneration(receiptData) {
     } catch (err) {
         console.error("Image generation error:", err.message);
 
-        // 4. IF IT FAILS: Keep button DISABLED and show clear error state. NO FALLBACK TEXT MESSAGES!
         if (waBtn) {
             waBtn.disabled = true;
             waBtn.style.opacity = '0.5';
@@ -819,7 +800,6 @@ async function searchRecords() {
     const query = document.getElementById('searchFlat').value.trim();
     const container = document.getElementById('searchResults');
 
-    // If empty, clear results cleanly without popping up a browser alert
     if (!query) {
         container.innerHTML = `<p class="placeholder-text">Enter flat number above to search...</p>`;
         return;
@@ -855,4 +835,103 @@ async function searchRecords() {
         html += '</tbody></table>';
         container.innerHTML = html;
     } catch (err) { container.innerHTML = '<p style="color:#c1121f;">Error searching records.</p>'; }
+}
+
+async function fetchAnalyticsData() {
+    const bContainer = document.getElementById('buildingStatsContainer');
+    const pContainer = document.getElementById('paymentModeStatsContainer');
+    const tbody = document.getElementById('dailyLedgerTbody');
+
+    const TOTAL_FLATS_MAP = {
+        'Building A': 110,
+        'Building B': 166,
+        'Building C': 166,
+        'Building D1': 76,
+        'Building D2': 76,
+        'Building E': 110,
+        'Building F1': 42
+    };
+
+    try {
+        const res = await fetch('/api/analytics', { cache: 'no-store' });
+        const data = await res.json();
+
+        if (data.status !== 'success') return;
+
+        // 1. Render Building / Tower Stats with Participation Bar
+        if (data.buildingSummary && data.buildingSummary.length > 0) {
+            let bHtml = '';
+            data.buildingSummary.forEach(b => {
+                const totalCapacity = TOTAL_FLATS_MAP[b.building] || 0;
+                const contributed = Number(b.contributed_flats) || 0;
+                const percentage = totalCapacity > 0 ? ((contributed / totalCapacity) * 100).toFixed(1) : 0;
+
+                bHtml += `
+                    <div class="stat-pill-box">
+                        <div class="b-name">${b.building}</div>
+                        <div class="b-amount">₹${Number(b.total_amount).toLocaleString('en-IN')}</div>
+                        <div class="b-count">${b.total_receipts} Receipts</div>
+                        ${totalCapacity > 0 ? `
+                            <div class="participation-bar-container">
+                                <div class="participation-text">
+                                    <span>Participation:</span> 
+                                    <strong>${contributed}/${totalCapacity} (${percentage}%)</strong>
+                                </div>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: ${Math.min(percentage, 100)}%;"></div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            bContainer.innerHTML = bHtml;
+        }
+
+        // 2. Render Payment Mode Summary
+        if (data.paymentModeSummary && data.paymentModeSummary.length > 0) {
+            let pHtml = '<div class="payment-mode-flex">';
+            data.paymentModeSummary.forEach(p => {
+                const icon = p.mode.toLowerCase().includes('cash') ? '💵' : '📱';
+                pHtml += `
+                    <div class="payment-mode-pill">
+                        <span class="p-icon">${icon}</span>
+                        <div>
+                            <strong>${p.mode}:</strong> ₹${Number(p.total_amount).toLocaleString('en-IN')}
+                            <small>(${p.total_receipts} txns)</small>
+                        </div>
+                    </div>
+                `;
+            });
+            pHtml += '</div>';
+            pContainer.innerHTML = pHtml;
+        }
+
+        // 3. Render Daily Cash Flow Table
+        if (data.dailySummary && data.dailySummary.length > 0) {
+            let dHtml = '';
+            data.dailySummary.forEach(row => {
+                const coll = Number(row.daily_collection);
+                const exp = Number(row.daily_expense);
+                const net = Number(row.net_balance);
+                const netClass = net >= 0 ? 'color: #2a9d8f; font-weight: bold;' : 'color: #c1121f; font-weight: bold;';
+
+                dHtml += `
+                    <tr>
+                        <td class="nowrap">${formatDateClean(row.date)}</td>
+                        <td>${row.receipt_count}</td>
+                        <td style="color: #2a9d8f; font-weight: bold;">+ ₹${coll.toLocaleString('en-IN')}</td>
+                        <td style="color: #c1121f; font-weight: bold;">- ₹${exp.toLocaleString('en-IN')}</td>
+                        <td style="${netClass}">₹${net.toLocaleString('en-IN')}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = dHtml;
+        } else {
+            tbody.innerHTML = '<tr><td colspan="5" class="center-text">No daily records found.</td></tr>';
+        }
+
+    } catch (err) {
+        console.error("Error loading analytics:", err);
+    }
 }
