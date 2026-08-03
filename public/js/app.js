@@ -16,9 +16,9 @@ const i18n = {
         famLbl: "कुटुंब व्यक्ती संख्या", famPh: "4", modeLbl: "भरणा प्रकार",
         modeOptions: { UPI: "ऑनलाइन (UPI)", Cash: "रोख (Cash)" },
         btnSave: "पावती सेव्ह करा व PDF जनरेट करा",
-        saveLoadingText: "⏳ पावती सेव्ह व Drive Link तयार होत आहे...",
-        savingStatusText: "माहिती सेव्ह व PDF तयार होत आहे. कृपया वाट पहा...",
-        saveSuccessMsg: "✓ पावती सेव्ह व Drive Link तयार झाली!",
+        saveLoadingText: "⏳ पावती सेव्ह होत आहे...",
+        savingStatusText: "माहिती सेव्ह होत आहे. कृपया वाट पहा...",
+        saveSuccessMsg: "✓ पावती सेव्ह झाली! आता इमेज लिंक तयार होत आहे...",
         waLinkMsg: "🖼️ अधिकृत पावती व मंडळ कार्यक्रम इमेज पाहण्यासाठी येथे क्लिक करा:",
         tabReceipt: "📝 पावती नोंदवा", tabExpense: "💸 खर्च नोंदवा (Admin)", tabSearch: "🔎 पावती शोधा",
         expTitle: "💸 खर्च नोंदवा (Add New Expense)",
@@ -52,9 +52,9 @@ const i18n = {
         famLbl: "परिवार सदस्य संख्या", famPh: "4", modeLbl: "भुगतान का प्रकार",
         modeOptions: { UPI: "ऑनलाइन (UPI)", Cash: "नकद (Cash)" },
         btnSave: "रसीद सहेजें एवं जनरेट करें",
-        saveLoadingText: "⏳ रसीद सहेजी जा रही है व लिंक तैयार हो रही है...",
-        savingStatusText: "जानकारी सहेजी जा रही है व PDF तैयार हो रही है। कृपया प्रतीक्षा करें...",
-        saveSuccessMsg: "✓ रसीद सफलतापूर्वक सहेजी गई!",
+        saveLoadingText: "⏳ रसीद सहेजी जा रही है...",
+        savingStatusText: "जानकारी सहेजी जा रही है। कृपया प्रतीक्षा करें...",
+        saveSuccessMsg: "✓ रसीद सफलतापूर्वक सहेजी गई! लिंक तैयार हो रही है...",
         waLinkMsg: "🖼️ आधिकारिक रसीद एवं कार्यक्रम इमेज देखने के लिए यहाँ क्लिक करें:",
         tabReceipt: "📝 रसीद दर्ज करें", tabExpense: "💸 खर्च दर्ज करें (Admin)", tabSearch: "🔎 रसीद खोजें",
         expTitle: "💸 खर्च दर्ज करें (Add New Expense)",
@@ -88,9 +88,9 @@ const i18n = {
         famLbl: "No. of Family Members", famPh: "4", modeLbl: "Payment Mode",
         modeOptions: { UPI: "Online (UPI)", Cash: "Cash" },
         btnSave: "Save & Generate Receipt",
-        saveLoadingText: "⏳ Saving Receipt & Generating Link...",
-        savingStatusText: "Saving details & generating PDF. Please wait...",
-        saveSuccessMsg: "✓ Receipt Saved & Drive PDF Generated Successfully!",
+        saveLoadingText: "⏳ Saving Entry...",
+        savingStatusText: "Saving entry to database. Please wait...",
+        saveSuccessMsg: "✓ Entry Saved! Generating Drive image link...",
         waLinkMsg: "🖼️ Click here to view/download official receipt image/PDF:",
         tabReceipt: "📝 New Receipt", tabExpense: "💸 Manage Expenses (Admin)", tabSearch: "🔎 Search Receipts",
         expTitle: "💸 Record New Expense",
@@ -124,9 +124,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
     changeLanguage();
     fetchStats();
-    document.getElementById('expDate').valueAsDate = new Date();
+    if (document.getElementById('expDate')) {
+        document.getElementById('expDate').valueAsDate = new Date();
+    }
 
-    // Resets the 90-minute timer whenever the user interacts with the app
     document.body.addEventListener('mousemove', resetSessionTimer);
     document.body.addEventListener('click', resetSessionTimer);
     document.body.addEventListener('keypress', resetSessionTimer);
@@ -148,7 +149,7 @@ async function fetchStats() {
         document.getElementById('statAmount').innerText = '₹' + Number(data.totalAmount || 0).toLocaleString('en-IN');
         document.getElementById('statReceipts').innerText = data.totalReceipts || 0;
         document.getElementById('statMembers').innerText = data.totalMembers || 0;
-        if (data.totalExpenses) {
+        if (data.totalExpenses && document.getElementById('statExpenses')) {
             document.getElementById('statExpenses').innerText = '₹' + Number(data.totalExpenses || 0).toLocaleString('en-IN');
         }
 
@@ -198,7 +199,9 @@ function handleLogin() {
             }
         });
 
-        document.getElementById('expenseStatCard').style.display = 'flex';
+        if (document.getElementById('expenseStatCard')) {
+            document.getElementById('expenseStatCard').style.display = 'flex';
+        }
         if (isAdmin) {
             fetchExpenses();
         }
@@ -370,7 +373,7 @@ async function generateAndSave() {
     const rawWhatsapp = document.getElementById('whatsapp').value.replace(/[^0-9]/g, '');
     const flat = document.getElementById('flat').value.trim();
     const amount = document.getElementById('amount').value.trim();
-    const familyCount = document.getElementById('familyCount').value.trim();
+    const familyCount = document.getElementById('familyCount').value.trim() || "1";
     const paymentMode = document.getElementById('paymentMode').value;
 
     if (!validateWhatsAppRealtime()) {
@@ -395,11 +398,12 @@ async function generateAndSave() {
         amount,
         familyCount,
         paymentMode,
-        collectedBy: loggedInUser,
+        collectedBy: loggedInUser || "Lokendra Singh Parmar",
         lang: currentLang
     };
 
     try {
+        // STEP 1: Fast Database Save (~20ms)
         const res = await fetch('/api/save-receipt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -410,29 +414,86 @@ async function generateAndSave() {
         if (result.status === 'success') {
             currentData = { ...payload, ...result };
 
+            // Show action box immediately with details logged
             document.getElementById('resReceiptNo').innerText = result.receiptNo;
             document.getElementById('resName').innerText = payload.name;
-
-            const viewPdfBtn = document.getElementById('viewPdfBtn');
-            if (result.imageUrl) {
-                viewPdfBtn.href = result.imageUrl;
-                viewPdfBtn.style.display = 'inline-flex';
-            } else {
-                viewPdfBtn.style.display = 'none';
-            }
-
             document.getElementById('actionBox').style.display = 'block';
+
             statusMsg.className = "status-msg status-success";
             statusMsg.innerText = t.saveSuccessMsg;
-
             fetchStats();
-        } else { throw new Error(result.message); }
+
+            // STEP 2: Trigger image generation in background & keep WA button disabled
+            await triggerReceiptImageGeneration(currentData);
+
+        } else {
+            throw new Error(result.message);
+        }
     } catch (err) {
         statusMsg.className = "status-msg status-error";
         statusMsg.innerText = "Error saving receipt: " + err.message;
         setFormFreeze(false);
-    } finally {
         document.getElementById('saveBtnText').innerText = t.btnSave;
+    }
+}
+
+async function triggerReceiptImageGeneration(receiptData) {
+    const waBtn = document.getElementById('waBtn');
+    const viewPdfBtn = document.getElementById('viewPdfBtn');
+
+    // Put WhatsApp button into pending/disabled state
+    if (waBtn) {
+        waBtn.disabled = true;
+        waBtn.style.opacity = '0.6';
+        waBtn.style.cursor = 'not-allowed';
+        waBtn.innerHTML = `⏳ Generating Receipt Image & Drive Link...`;
+    }
+    if (viewPdfBtn) {
+        viewPdfBtn.style.display = 'none';
+    }
+
+    try {
+        // Call backend Puppeteer & Drive Endpoint
+        const imgRes = await fetch('/api/generate-receipt-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(receiptData)
+        });
+
+        const imgData = await imgRes.json();
+
+        if (imgData.status === 'success' && imgData.imageUrl) {
+            // Store Drive URL
+            currentData.imageUrl = imgData.imageUrl;
+
+            // Show View PDF Button
+            if (viewPdfBtn) {
+                viewPdfBtn.href = imgData.imageUrl;
+                viewPdfBtn.style.display = 'inline-flex';
+            }
+
+            // Enable WhatsApp Button with URL embedded
+            if (waBtn) {
+                waBtn.disabled = false;
+                waBtn.style.opacity = '1';
+                waBtn.style.cursor = 'pointer';
+                waBtn.innerHTML = `💬 Send WhatsApp Receipt Link`;
+            }
+        } else {
+            throw new Error(imgData.message || "Drive upload failed");
+        }
+    } catch (err) {
+        console.warn("Drive image link notice:", err.message);
+
+        // Fallback: Enable WhatsApp button with text receipt if image generation failed
+        if (waBtn) {
+            waBtn.disabled = false;
+            waBtn.style.opacity = '1';
+            waBtn.style.cursor = 'pointer';
+            waBtn.innerHTML = `💬 Send Text Receipt on WhatsApp (No Image)`;
+        }
+    } finally {
+        document.getElementById('saveBtnText').innerText = i18n[currentLang]?.btnSave || "Save & Generate Receipt";
     }
 }
 
@@ -487,7 +548,8 @@ function resendWA(receiptNo, date, name, flat, amount, collectedBy, whatsapp, im
 
 function resetForm() {
     ['name', 'whatsapp', 'flat', 'amount', 'amountWords', 'familyCount'].forEach(id => {
-        document.getElementById(id).value = '';
+        const el = document.getElementById(id);
+        if (el) el.value = '';
     });
     document.getElementById('actionBox').style.display = 'none';
     document.getElementById('statusMsg').innerText = '';
@@ -767,209 +829,4 @@ async function searchRecords() {
         html += '</tbody></table>';
         container.innerHTML = html;
     } catch (err) { container.innerHTML = '<p style="color:#c1121f;">Error searching records.</p>'; }
-}
-
-function resendWA(receiptNo, date, name, flat, amount, collectedBy, whatsapp, imageUrl) {
-    const t = i18n[currentLang] || i18n.en;
-
-    let text = `*${currentLang === 'en' ? 'PURVANCHAL GANESHOTSAV MANDAL' : (currentLang === 'hi' ? 'पूर्वांचल गणेशोत्सव मंडल' : 'पूर्वांचल गणेशोत्सव मंडळ')}*\n` +
-        `*${currentLang === 'en' ? 'DONATION RECEIPT • YEAR : 2026' : (currentLang === 'hi' ? 'दान / चंदा रसीद • वर्ष २०२६' : 'देणगी / वर्गणी पावती • वर्ष २०२६')}*\n` +
-        `----------------------------------\n` +
-        `*Receipt No:* ${receiptNo}\n` +
-        `*Date:* ${date}\n` +
-        `*Name:* ${name}\n` +
-        `*Flat No:* ${flat}\n` +
-        `*Amount:* ₹${amount}/-\n` +
-        `*Representative:* ${collectedBy}\n` +
-        `----------------------------------\n`;
-
-    if (imageUrl && imageUrl !== 'undefined' && imageUrl !== 'null' && imageUrl.trim() !== '') {
-        text += `${t.waLinkMsg}\n${imageUrl}\n\n`;
-    }
-
-    text += `Thank you for your support !! 🌺`;
-
-    const formattedWa = whatsapp.replace(/[^0-9]/g, '');
-    const finalWa = formattedWa.length === 10 ? '91' + formattedWa : formattedWa;
-    window.open(`https://wa.me/${finalWa}?text=${encodeURIComponent(text)}`, '_blank');
-}
-
-async function handleFormSubmit(e) {
-    e.preventDefault();
-
-    const submitBtn = document.getElementById('saveBtn');
-    submitBtn.disabled = true;
-    submitBtn.innerText = 'Saving Entry...';
-
-    // Collect input values
-    const payload = {
-        name: document.getElementById('name').value.trim(),
-        whatsapp: document.getElementById('whatsapp').value.trim(),
-        flat: document.getElementById('flat').value.trim(),
-        amount: document.getElementById('amount').value.trim(),
-        familyCount: document.getElementById('familyCount').value || "1",
-        paymentMode: document.getElementById('paymentMode').value,
-        collectedBy: currentUser.name || "Lokendra Singh Parmar",
-        lang: currentLanguage || 'mr'
-    };
-
-    try {
-        // STEP 1: Fast Database Save
-        const saveRes = await fetch('/api/save-receipt', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        const saveData = await saveRes.json();
-
-        if (saveData.status !== 'success') {
-            alert('Error saving entry: ' + saveData.message);
-            submitBtn.disabled = false;
-            submitBtn.innerText = 'Save & Generate Receipt';
-            return;
-        }
-
-        // STEP 2: Clear Form & Reset Submit Button IMMEDIATELY
-        resetForm();
-        submitBtn.disabled = false;
-        submitBtn.innerText = 'Save & Generate Receipt';
-
-        // STEP 3: Show Modal with "Generating Link..." state
-        showModalWithLoader(saveData);
-
-        // STEP 4: Request Image URL from server
-        generateImageAndEnableWhatsApp(saveData);
-
-    } catch (err) {
-        alert("Network Error: " + err.message);
-        submitBtn.disabled = false;
-        submitBtn.innerText = 'Save & Generate Receipt';
-    }
-}
-
-function showModalWithLoader(data) {
-    document.getElementById('modalReceiptNo').innerText = `#${data.receiptNo}`;
-    document.getElementById('modalName').innerText = data.name;
-    document.getElementById('modalFlat').innerText = data.flat;
-    document.getElementById('modalAmount').innerText = `₹${data.amount}`;
-
-    const waBtn = document.getElementById('whatsappBtn');
-    waBtn.disabled = true;
-    waBtn.style.opacity = '0.6';
-    waBtn.innerHTML = `⏳ Generating WhatsApp Receipt Link...`;
-
-    document.getElementById('receiptModal').classList.add('active');
-}
-
-async function generateImageAndEnableWhatsApp(receiptData) {
-    const waBtn = document.getElementById('whatsappBtn');
-
-    try {
-        const imgRes = await fetch('/api/generate-receipt-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(receiptData)
-        });
-
-        const imgData = await imgRes.json();
-
-        if (imgData.status === 'success' && imgData.imageUrl) {
-            // Enable button with full WhatsApp link!
-            const message = `*Purvanchal Ganeshotsav Mandal*\n\nDear *${receiptData.name}* (Flat: ${receiptData.flat}),\nThank you for your donation of *₹${receiptData.amount}*.\n\nReceipt #${receiptData.receiptNo}\nView/Download Receipt: ${imgData.imageUrl}`;
-            const waUrl = `https://wa.me/91${receiptData.whatsapp}?text=${encodeURIComponent(message)}`;
-
-            waBtn.disabled = false;
-            waBtn.style.opacity = '1';
-            waBtn.innerHTML = `📲 Send Receipt on WhatsApp`;
-            waBtn.onclick = () => window.open(waUrl, '_blank');
-        } else {
-            throw new Error(imgData.message || "Failed to generate image URL");
-        }
-    } catch (err) {
-        console.warn("Drive image link fallback triggered:", err.message);
-        // Fallback: Enable WhatsApp button with text receipt if drive image upload timed out
-        const fallbackMsg = `*Purvanchal Ganeshotsav Mandal*\n\nDear *${receiptData.name}* (Flat: ${receiptData.flat}),\nThank you for your donation of *₹${receiptData.amount}*.\n\nReceipt #${receiptData.receiptNo}`;
-        const waUrl = `https://wa.me/91${receiptData.whatsapp}?text=${encodeURIComponent(fallbackMsg)}`;
-
-        waBtn.disabled = false;
-        waBtn.style.opacity = '1';
-        waBtn.innerHTML = `💬 Send Text Receipt on WhatsApp`;
-        waBtn.onclick = () => window.open(waUrl, '_blank');
-    }
-}
-
-function showModalWithLoadingState(data) {
-    document.getElementById('modalReceiptNo').innerText = `#${data.receiptNo}`;
-    document.getElementById('modalName').innerText = data.name;
-    document.getElementById('modalFlat').innerText = data.flat;
-    document.getElementById('modalAmount').innerText = `₹${data.amount}`;
-
-    const waBtn = document.getElementById('whatsappBtn');
-    waBtn.disabled = true;
-    waBtn.style.opacity = '0.6';
-    waBtn.innerHTML = `⏳ Generating Receipt Link...`;
-
-    document.getElementById('receiptModal').classList.add('active');
-}
-
-async function fetchImageUrlAndUpdateWhatsApp(data) {
-    const waBtn = document.getElementById('whatsappBtn');
-
-    try {
-        const imgRes = await fetch('/api/generate-receipt-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        const imgData = await imgRes.json();
-
-        if (imgData.status === 'success' && imgData.imageUrl) {
-            // Enable WhatsApp Button with URL included!
-            const message = `*Purvanchal Ganeshotsav Mandal*\n\nDear *${data.name}* (Flat: ${data.flat}),\nThank you for your donation of *₹${data.amount}*.\n\nReceipt #${data.receiptNo}\nDownload/View Receipt: ${imgData.imageUrl}`;
-            const waUrl = `https://wa.me/91${data.whatsapp}?text=${encodeURIComponent(message)}`;
-
-            waBtn.disabled = false;
-            waBtn.style.opacity = '1';
-            waBtn.innerHTML = `📲 Send Receipt on WhatsApp`;
-            waBtn.onclick = () => window.open(waUrl, '_blank');
-        } else {
-            // Fallback if Drive upload failed
-            waBtn.disabled = false;
-            waBtn.style.opacity = '1';
-            waBtn.innerHTML = `⚠️ Send Text Message (No Image)`;
-            const fallbackMsg = `*Purvanchal Ganeshotsav Mandal*\n\nDear *${data.name}* (Flat: ${data.flat}),\nThank you for your donation of *₹${data.amount}*.\n\nReceipt #${data.receiptNo}`;
-            waBtn.onclick = () => window.open(`https://wa.me/91${data.whatsapp}?text=${encodeURIComponent(fallbackMsg)}`, '_blank');
-        }
-    } catch (err) {
-        waBtn.disabled = false;
-        waBtn.style.opacity = '1';
-        waBtn.innerHTML = `⚠️ Send Text Message (No Image)`;
-    }
-}
-
-async function loadReceiptImageLink(receiptData) {
-    const whatsappBtn = document.getElementById('whatsappBtn');
-    if (whatsappBtn) {
-        whatsappBtn.innerText = 'Generating Share Link...';
-        whatsappBtn.disabled = true;
-    }
-
-    try {
-        const imgRes = await fetch('/api/generate-receipt-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(receiptData)
-        });
-        const imgData = await imgRes.json();
-
-        if (imgData.status === 'success' && imgData.imageUrl) {
-            updateWhatsAppButton(receiptData, imgData.imageUrl);
-        } else {
-            setWhatsAppFallback(receiptData);
-        }
-    } catch (err) {
-        setWhatsAppFallback(receiptData);
-    }
 }
