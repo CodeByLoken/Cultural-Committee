@@ -441,19 +441,19 @@ async function triggerReceiptImageGeneration(receiptData) {
     const waBtn = document.getElementById('waBtn');
     const viewPdfBtn = document.getElementById('viewPdfBtn');
 
-    // Put WhatsApp button into pending/disabled state
+    // 1. Keep WhatsApp & View PDF buttons STRICTLY DISABLED while generating
     if (waBtn) {
         waBtn.disabled = true;
-        waBtn.style.opacity = '0.6';
+        waBtn.style.opacity = '0.5';
         waBtn.style.cursor = 'not-allowed';
-        waBtn.innerHTML = `⏳ Generating Receipt Image & Drive Link...`;
+        waBtn.innerHTML = `⏳ Generating Receipt Image Link...`;
     }
     if (viewPdfBtn) {
         viewPdfBtn.style.display = 'none';
     }
 
     try {
-        // Call backend Puppeteer & Drive Endpoint
+        // 2. Request Image Generation from Backend
         const imgRes = await fetch('/api/generate-receipt-image', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -463,16 +463,16 @@ async function triggerReceiptImageGeneration(receiptData) {
         const imgData = await imgRes.json();
 
         if (imgData.status === 'success' && imgData.imageUrl) {
-            // Store Drive URL
+            // Save the valid Google Drive image URL
             currentData.imageUrl = imgData.imageUrl;
 
-            // Show View PDF Button
+            // Show Google Drive View Button
             if (viewPdfBtn) {
                 viewPdfBtn.href = imgData.imageUrl;
                 viewPdfBtn.style.display = 'inline-flex';
             }
 
-            // Enable WhatsApp Button with URL embedded
+            // 3. ONLY NOW Enable the WhatsApp Button with the Image URL included
             if (waBtn) {
                 waBtn.disabled = false;
                 waBtn.style.opacity = '1';
@@ -480,17 +480,17 @@ async function triggerReceiptImageGeneration(receiptData) {
                 waBtn.innerHTML = `💬 Send WhatsApp Receipt Link`;
             }
         } else {
-            throw new Error(imgData.message || "Drive upload failed");
+            throw new Error(imgData.message || "Failed to generate image URL");
         }
     } catch (err) {
-        console.warn("Drive image link notice:", err.message);
+        console.error("Image generation error:", err.message);
 
-        // Fallback: Enable WhatsApp button with text receipt if image generation failed
+        // 4. IF IT FAILS: Keep button DISABLED and show clear error state. NO FALLBACK TEXT MESSAGES!
         if (waBtn) {
-            waBtn.disabled = false;
-            waBtn.style.opacity = '1';
-            waBtn.style.cursor = 'pointer';
-            waBtn.innerHTML = `💬 Send Text Receipt on WhatsApp (No Image)`;
+            waBtn.disabled = true;
+            waBtn.style.opacity = '0.5';
+            waBtn.style.cursor = 'not-allowed';
+            waBtn.innerHTML = `⚠️ Image Generation Failed (Try Resend from Search)`;
         }
     } finally {
         document.getElementById('saveBtnText').innerText = i18n[currentLang]?.btnSave || "Save & Generate Receipt";
