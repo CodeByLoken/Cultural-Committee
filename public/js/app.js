@@ -629,16 +629,44 @@ async function fetchExpenses() {
 
 function formatDateClean(dateStr) {
     if (!dateStr) return '-';
-    if (dateStr.length === 10 && dateStr.includes('-')) {
-        const parts = dateStr.split('-');
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+
+    // Normalize slashes to hyphens for uniform processing
+    let cleanStr = String(dateStr).trim().replace(/\//g, '-');
+    let parts = cleanStr.split('-');
+
+    // Case 1: Already YYYY-MM-DD (e.g., 2026-08-02)
+    if (parts.length === 3 && parts[0].length === 4) {
+        const day = parts[2].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[0];
+        return `${day}/${month}/${year}`;
     }
+
+    // Case 2: Already DD-MM-YYYY or MM-DD-YYYY (e.g., 03-08-2026)
+    if (parts.length === 3 && parts[2].length === 4) {
+        const p1 = parts[0].padStart(2, '0');
+        const p2 = parts[1].padStart(2, '0');
+        const year = parts[2];
+
+        // If first part is > 12, it's guaranteed to be DD-MM-YYYY
+        if (Number(p1) > 12) {
+            return `${p1}/${p2}/${year}`;
+        }
+
+        // Otherwise assume DD/MM/YYYY
+        return `${p1}/${p2}/${year}`;
+    }
+
+    // Case 3: Fallback using JavaScript Date parser
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}/${month}/${year}`;
+    if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    return dateStr;
 }
 
 function renderExpensesTable() {
