@@ -106,7 +106,6 @@ app.post('/api/save-receipt', async (req, res) => {
         const receiptNo = dbRes.rows[0].receipt_no;
         await client.query('COMMIT');
 
-        // Immediately respond to frontend!
         return res.json({
             status: 'success',
             receiptNo,
@@ -115,7 +114,9 @@ app.post('/api/save-receipt', async (req, res) => {
             flat,
             name,
             amount,
-            whatsapp
+            whatsapp,
+            paymentMode,
+            collectedBy
         });
 
     } catch (error) {
@@ -132,27 +133,34 @@ app.post('/api/generate-receipt-image', async (req, res) => {
     const { receiptNo, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, today, lang } = req.body;
 
     try {
-        const pdfResult = await generateReceiptPDF({
-            receiptNo, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, today, lang
-        });
-
-        let imageUrl = "";
-        if (pdfResult && pdfResult.imageBase64) {
-            const driveRes = await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'saveImage', receiptNo, flat, imageBase64: pdfResult.imageBase64 }),
-                redirect: 'follow'
+        // Race condition: If Puppeteer or Google Drive takes > 12 seconds, abort safely
+        const imagePromise = (async () => {
+            const pdfResult = await generateReceiptPDF({
+                receiptNo, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, today, lang
             });
-            const driveData = JSON.parse(await driveRes.text());
-            imageUrl = driveData.imageUrl || "";
 
-            if (imageUrl) {
-                await pool.query('UPDATE receipts SET image_url = $1 WHERE receipt_no = $2', [imageUrl, receiptNo]);
+            if (pdfResult && pdfResult.imageBase64) {
+                const driveRes = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'saveImage', receiptNo, flat, imageBase64: pdfResult.imageBase64 }),
+                    redirect: 'follow'
+                });
+                const driveData = JSON.parse(await driveRes.text());
+                return driveData.imageUrl || "";
             }
-        }
+            return "";
+        })();
 
-        return res.json({ status: 'success', imageUrl });
+        const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(""), 12000));
+        const imageUrl = await Promise.race([imagePromise, timeoutPromise]);
+
+        if (imageUrl) {
+            await pool.query('UPDATE receipts SET image_url = $1 WHERE receipt_no = $2', [imageUrl, receiptNo]);
+            return res.json({ status: 'success', imageUrl });
+        } else {
+            return res.status(500).json({ status: 'error', message: 'Image generation timed out or failed' });
+        }
 
     } catch (err) {
         console.error("Image generation error:", err.message);

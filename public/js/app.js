@@ -799,12 +799,12 @@ async function handleFormSubmit(e) {
 
     const submitBtn = document.getElementById('saveBtn');
     submitBtn.disabled = true;
-    submitBtn.innerText = 'Saving...';
+    submitBtn.innerText = 'Saving Entry...';
 
     const formData = getFormData();
 
     try {
-        // 1. FAST SAVE TO DB (~20ms)
+        // Step 1: Save to Database (~20ms)
         const saveRes = await fetch('/api/save-receipt', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -814,21 +814,77 @@ async function handleFormSubmit(e) {
         const saveData = await saveRes.json();
 
         if (saveData.status !== 'success') {
-            throw new Error(saveData.message || 'Failed to save');
+            alert('Error saving receipt: ' + saveData.message);
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'Save & Generate Receipt';
+            return;
         }
 
-        // 2. Clear Form & Show Success Modal Immediately
-        resetForm(); // Form is clear for the next entry!
-        showModal(saveData); // Displays Receipt No, Name, Amount
-
-        // 3. Request Drive Link in Background for WhatsApp Share Button
-        loadReceiptImageLink(saveData);
-
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
+        // Step 2: Clear Form IMMEDIATELY to prevent duplicate submissions
+        resetForm();
         submitBtn.disabled = false;
         submitBtn.innerText = 'Save & Generate Receipt';
+
+        // Step 3: Show Modal with Disabled WhatsApp Button
+        showModalWithLoadingState(saveData);
+
+        // Step 4: Fetch Image URL asynchronously
+        fetchImageUrlAndUpdateWhatsApp(saveData);
+
+    } catch (err) {
+        alert("Connection error: " + err.message);
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Save & Generate Receipt';
+    }
+}
+
+function showModalWithLoadingState(data) {
+    document.getElementById('modalReceiptNo').innerText = `#${data.receiptNo}`;
+    document.getElementById('modalName').innerText = data.name;
+    document.getElementById('modalFlat').innerText = data.flat;
+    document.getElementById('modalAmount').innerText = `₹${data.amount}`;
+
+    const waBtn = document.getElementById('whatsappBtn');
+    waBtn.disabled = true;
+    waBtn.style.opacity = '0.6';
+    waBtn.innerHTML = `⏳ Generating Receipt Link...`;
+
+    document.getElementById('receiptModal').classList.add('active');
+}
+
+async function fetchImageUrlAndUpdateWhatsApp(data) {
+    const waBtn = document.getElementById('whatsappBtn');
+
+    try {
+        const imgRes = await fetch('/api/generate-receipt-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const imgData = await imgRes.json();
+
+        if (imgData.status === 'success' && imgData.imageUrl) {
+            // Enable WhatsApp Button with URL included!
+            const message = `*Purvanchal Ganeshotsav Mandal*\n\nDear *${data.name}* (Flat: ${data.flat}),\nThank you for your donation of *₹${data.amount}*.\n\nReceipt #${data.receiptNo}\nDownload/View Receipt: ${imgData.imageUrl}`;
+            const waUrl = `https://wa.me/91${data.whatsapp}?text=${encodeURIComponent(message)}`;
+
+            waBtn.disabled = false;
+            waBtn.style.opacity = '1';
+            waBtn.innerHTML = `📲 Send Receipt on WhatsApp`;
+            waBtn.onclick = () => window.open(waUrl, '_blank');
+        } else {
+            // Fallback if Drive upload failed
+            waBtn.disabled = false;
+            waBtn.style.opacity = '1';
+            waBtn.innerHTML = `⚠️ Send Text Message (No Image)`;
+            const fallbackMsg = `*Purvanchal Ganeshotsav Mandal*\n\nDear *${data.name}* (Flat: ${data.flat}),\nThank you for your donation of *₹${data.amount}*.\n\nReceipt #${data.receiptNo}`;
+            waBtn.onclick = () => window.open(`https://wa.me/91${data.whatsapp}?text=${encodeURIComponent(fallbackMsg)}`, '_blank');
+        }
+    } catch (err) {
+        waBtn.disabled = false;
+        waBtn.style.opacity = '1';
+        waBtn.innerHTML = `⚠️ Send Text Message (No Image)`;
     }
 }
 
