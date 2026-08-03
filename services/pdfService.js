@@ -1,6 +1,105 @@
 const puppeteer = require('puppeteer');
 
-// ... (Your labels, ganeshHeaderSvg, and eventIcons remain unchanged) ...
+// 1. Ganesh Header SVG Icon
+const ganeshHeaderSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="45" height="45">
+  <g fill="none" stroke="#c1121f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 50 10 L 40 25 L 60 25 Z" fill="#ffb703" stroke="#c1121f" />
+    <path d="M 38 25 Q 50 18 62 25" stroke="#c1121f" stroke-width="2.5"/>
+    <circle cx="50" cy="18" r="2.5" fill="#c1121f"/>
+    <path d="M 38 32 C 15 25 15 52 38 52" fill="#fffdf5" />
+    <path d="M 62 32 C 85 25 85 52 62 52" fill="#fffdf5" />
+    <path d="M 38 32 Q 50 35 62 32 C 62 48 55 58 52 68 C 50 75 42 78 40 73 C 38 68 46 64 47 58 C 48 52 38 48 38 32 Z" fill="#fffdf5" />
+    <path d="M 46 34 L 54 34 M 45 37 L 55 37 M 47 40 L 53 40" stroke="#c1121f" stroke-width="2" />
+    <circle cx="50" cy="43" r="1.5" fill="#ffb703" stroke="none" />
+    <circle cx="39" cy="71" r="3.5" fill="#ffb703" stroke="#c1121f" stroke-width="1.5" />
+  </g>
+</svg>`;
+
+// 2. Event SVG Icons
+const eventIcons = {
+    flag: `<svg viewBox="0 0 36 24" width="32" height="22"><rect width="36" height="8" fill="#FF9933"/><rect y="8" width="36" height="8" fill="#FFFFFF"/><rect y="16" width="36" height="8" fill="#138808"/><circle cx="18" cy="12" r="3" fill="none" stroke="#000080" stroke-width="0.8"/></svg>`,
+    matki: `<svg viewBox="0 0 36 36" width="28" height="28"><path d="M 8 14 C 8 30 28 30 28 14 C 28 10 8 10 8 14 Z" fill="#fb8500" stroke="#780000" stroke-width="2"/><ellipse cx="18" cy="11" rx="9" ry="3" fill="#ffea00"/><path d="M 14 8 Q 18 2 22 8" stroke="#2a9d8f" stroke-width="2" fill="none"/></svg>`,
+    ganesh: ganeshHeaderSvg,
+    dandiya: `<svg viewBox="0 0 36 36" width="28" height="28"><line x1="6" y1="30" x2="30" y2="6" stroke="#c1121f" stroke-width="4" stroke-linecap="round"/><line x1="6" y1="6" x2="30" y2="30" stroke="#ffb703" stroke-width="4" stroke-linecap="round"/><circle cx="18" cy="18" r="4" fill="#2a9d8f"/></svg>`,
+    chakra: `<svg viewBox="0 0 36 36" width="28" height="28"><circle cx="18" cy="18" r="14" fill="none" stroke="#003049" stroke-width="2.5"/><circle cx="18" cy="18" r="2.5" fill="#003049"/><path d="M 18 4 L 18 32 M 4 18 L 32 18 M 8 8 L 28 28 M 8 28 L 28 8" stroke="#003049" stroke-width="1.2"/></svg>`,
+    holi: `<svg viewBox="0 0 36 36" width="28" height="28"><path d="M 4 22 C 4 30 16 30 16 22 Z" fill="#e63946"/><path d="M 20 22 C 20 30 32 30 32 22 Z" fill="#ffb703"/><path d="M 12 12 C 12 20 24 20 24 12 Z" fill="#2a9d8f"/></svg>`
+};
+
+// 3. Translation Labels Dictionary
+const labels = {
+    mr: {
+        title: "पूर्वांचल गणेशोत्सव मंडळ",
+        address: "केसनंद, ता. हवेली, जि. पुणे ४१२ २०७",
+        tag: "देणगी / वर्गणी पावती • वर्ष २०२६",
+        receiptNo: "पा.नं.:",
+        date: "दिनांक:",
+        prefix: "श्री / सौ.",
+        from: "यांकडून",
+        body: "सोसायटीच्या सर्व सामूहिक उत्सवांसाठी देणगी / वर्गणी अक्षरी रुपये",
+        received: "मिळाले.",
+        symbol: "रु.",
+        mode: "प्रकार:",
+        thankYou: "आभारी आहोत ! धन्यवाद !!",
+        subHeader: "॥ श्री गणेश प्रसन्न ॥",
+        festTitle: "सोसायटीत साजरे होणारे सर्व सामूहिक उत्सव (२०२६ - २०२७)",
+        festivals: [
+            { name: "१५ ऑगस्ट (स्वातंत्र्य दिन)", iconKey: "flag" },
+            { name: "श्रीकृष्ण जन्माष्टमी (दहीहंडी)", iconKey: "matki" },
+            { name: "गणेश चतुर्थी उत्सव (१० दिवस)", iconKey: "ganesh" },
+            { name: "नवरात्री उत्सव व गरबा दांडिया", iconKey: "dandiya" },
+            { name: "२६ जानेवारी (प्रजासत्ताक दिन)", iconKey: "chakra" },
+            { name: "होळी महोत्सव व रंगपंचमी", iconKey: "holi" }
+        ]
+    },
+    hi: {
+        title: "पूर्वांचल गणेशोत्सव मंडल",
+        address: "केसनंद, ता. हवेली, जि. पुणे ४१२ २०७",
+        tag: "दान / चंदा रसीद • वर्ष २०२६",
+        receiptNo: "रसीद क्र.:",
+        date: "दिनांक:",
+        prefix: "श्री / श्रीमती",
+        from: "से",
+        body: "सोसायटी के सभी सामूहिक उत्सवों हेतु दान / चंदा राशि शब्दों में रुपये",
+        received: "प्राप्त हुए।",
+        symbol: "रु.",
+        mode: "प्रकार:",
+        thankYou: "आपका हार्दिक आभार ! धन्यवाद !!",
+        subHeader: "॥ श्री गणेश प्रसन्न ॥",
+        festTitle: "सोसायटी द्वारा आयोजित सभी सामूहिक उत्सव (२०२६ - २०२७)",
+        festivals: [
+            { name: "15 अगस्त (स्वतंत्रता दिवस)", iconKey: "flag" },
+            { name: "श्रीकृष्ण जन्माष्टमी (दही हांडी)", iconKey: "matki" },
+            { name: "गणेश चतुर्थी उत्सव (10 दिवस)", iconKey: "ganesh" },
+            { name: "नवरात्रि उत्सव एवं गरबा", iconKey: "dandiya" },
+            { name: "26 जनवरी (गणतंत्र दिवस)", iconKey: "chakra" },
+            { name: "होली उत्सव एवं रंगपंचमी", iconKey: "holi" }
+        ]
+    },
+    en: {
+        title: "PURVANCHAL GANESHOTSAV MANDAL",
+        address: "Kesnand, Tal. Haveli, Dist. Pune 412 207",
+        tag: "DONATION RECEIPT • YEAR : 2026",
+        receiptNo: "Receipt No:",
+        date: "Date:",
+        prefix: "Mr. / Mrs.",
+        from: "received from",
+        body: "a sum of Rupees",
+        received: "towards all society organized festival contributions.",
+        symbol: "Rs.",
+        mode: "Mode:",
+        thankYou: "Thank You Very Much!",
+        subHeader: "॥ Shree Ganesh Prasanna ॥",
+        festTitle: "SOCIETY ORGANISED FESTIVALS (YEAR 2026 - 2027)",
+        festivals: [
+            { name: "15th August (Independence Day)", iconKey: "flag" },
+            { name: "Janmashtami (Dahi Handi)", iconKey: "matki" },
+            { name: "Ganesh Chaturthi Utsav", iconKey: "ganesh" },
+            { name: "Navratri Dandiya Nights", iconKey: "dandiya" },
+            { name: "26th January (Republic Day)", iconKey: "chakra" },
+            { name: "Holi Festival of Colors", iconKey: "holi" }
+        ]
+    }
+};
 
 async function generateReceiptPDF(data) {
     const lang = data.lang || 'mr';
@@ -22,10 +121,8 @@ async function generateReceiptPDF(data) {
     <head>
       <meta charset="UTF-8">
       <style>
-        /* Inline fallback fonts to prevent waiting on external Google Fonts */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', 'Noto Sans Devanagari', 'Arial', sans-serif; }
         body { padding: 12px; background: #fff; width: 720px; margin: 0 auto; }
-        
         #receiptContainer { width: 100%; background: #fff; padding: 4px; }
         .receipt-card { border: 3px solid #c1121f; border-radius: 14px; padding: 4px; background: #fffdf7; margin-bottom: 12px; }
         .receipt-inner { border: 2px dashed #fb8500; border-radius: 10px; padding: 12px 16px; }
@@ -105,7 +202,6 @@ async function generateReceiptPDF(data) {
 
     let page;
     try {
-        // 1. Re-launch browser if null or disconnected
         if (!global.sharedBrowser || !global.sharedBrowser.isConnected()) {
             global.sharedBrowser = await puppeteer.launch({
                 headless: 'new',
@@ -121,14 +217,10 @@ async function generateReceiptPDF(data) {
             });
         }
 
-        // 2. Open tab & block external network assets
         page = await global.sharedBrowser.newPage();
-        await page.setViewport({ width: 750, height: 900, deviceScaleFactor: 1.5 }); // reduced scale factor for faster rendering
-
-        // SPEED OPTIMIZATION: Wait ONLY for DOM ready, do NOT wait for networkidle
+        await page.setViewport({ width: 750, height: 900, deviceScaleFactor: 1.5 });
         await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
 
-        // 3. Take PNG Screenshot only (skip page.pdf unless explicitly required)
         const element = await page.$('#receiptContainer');
         const imageBase64 = await element.screenshot({ encoding: 'base64', type: 'png' });
 
@@ -138,7 +230,6 @@ async function generateReceiptPDF(data) {
 
     } catch (err) {
         if (page) await page.close().catch(() => { });
-        // Reset global browser on failure so it re-opens fresh next time
         global.sharedBrowser = null;
         throw err;
     }
