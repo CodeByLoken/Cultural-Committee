@@ -41,13 +41,14 @@ app.get('/api/stats', async (req, res) => {
 
         // Search Receipts by Flat Number
         if (flatQuery) {
+            const pattern = `${flatQuery.toLowerCase()}%`;
             const searchRes = await pool.query(
                 `SELECT receipt_no AS "receiptNo", date, name, flat, amount, whatsapp, 
                         collected_by AS "collectedBy", image_url AS "imageUrl" 
                  FROM receipts 
-                 WHERE LOWER(flat) = LOWER($1) 
+                 WHERE LOWER(flat) LIKE $1 
                  ORDER BY receipt_no DESC`,
-                [flatQuery]
+                [pattern]
             );
             return res.json({ results: searchRes.rows });
         }

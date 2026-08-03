@@ -274,8 +274,9 @@
         </div>
 
         <div class="search-bar">
-          <input type="text" id="searchFlat" placeholder="Enter Flat Number (e.g. A-608)" onkeydown="if(event.key==='Enter') searchRecords()" />
-          <button class="btn-primary-glow" onclick="searchRecords()">Search</button>
+         <!--   <input type="text" id="searchFlat" placeholder="Enter Flat Number (e.g. A-608)" onkeydown="if(event.key==='Enter') searchRecords()" /> -->
+            <input type="text" id="searchFlat" placeholder="Enter Flat Number (e.g. A-60)" oninput="searchRecords()" />
+            <button class="btn-primary-glow" onclick="searchRecords()">Search</button>
         </div>
 
         <div class="search-table-container" id="searchResults">
