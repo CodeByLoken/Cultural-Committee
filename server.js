@@ -48,7 +48,7 @@ app.get('/api/stats', async (req, res) => {
         const [collectionsRes, expensesRes, usersRes] = await Promise.all([
             pool.query('SELECT COALESCE(SUM(amount), 0) AS total_amount, COUNT(receipt_no) AS total_receipts, COALESCE(SUM(family_count), 0) AS total_members FROM receipts'),
             pool.query('SELECT COALESCE(SUM(amount), 0) AS total_expenses FROM expenses'),
-            pool.query('SELECT name, pin, role FROM users ORDER BY name ASC')
+            pool.query('SELECT name, pin, role FROM users ORDER BY id ASC')
         ]);
 
         const stats = collectionsRes.rows[0];
