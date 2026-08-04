@@ -112,8 +112,8 @@
 
       <!-- NAVIGATION TABS -->
       <nav class="nav-tabs">
-          <button class="tab-btn active" id="tabCreateBtn" onclick="switchTab('create')">📝 New Receipt</button>
-          <button class="tab-btn admin-only" id="tabAnalyticsBtn" onclick="switchTab('analytics')">📊 Analytics & Stats</button>
+          <button class="tab-btn admin-only" id="tabCreateBtn" onclick="switchTab('create')" style="display: none;">📝 New Receipt (Admin)</button>
+          <button class="tab-btn" id="tabAnalyticsBtn" onclick="switchTab('analytics')">📊 Analytics & Stats</button>
           <button class="tab-btn admin-only" id="tabExpenseBtn" onclick="switchTab('expense')" style="display: none;">💸 Manage Expenses (Admin)</button>
           <button class="tab-btn" id="tabSearchBtn" onclick="switchTab('search')">🔎 Search Receipts</button>
       </nav>

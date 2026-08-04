@@ -187,6 +187,7 @@ function handleLogin() {
         document.getElementById('userRoleBadge').innerText = isAdmin ? 'Admin' : 'User';
         document.getElementById('userRoleBadge').style.background = isAdmin ? '#fb8500' : '#ffb703';
 
+        // Toggle Admin-Only UI elements
         document.querySelectorAll('.admin-only').forEach(el => {
             if (isAdmin) {
                 if (el.classList.contains('tab-content')) {
@@ -205,11 +206,17 @@ function handleLogin() {
 
         resetForm();
         document.getElementById('loginPin').value = '';
-        switchTab('create');
+
         fetchStats();
 
+        // Default tab selection based on role:
+        // Admin defaults to 'create' (New Receipt)
+        // Normal User defaults to 'analytics' (Analytics & Stats)
         if (isAdmin) {
+            switchTab('create');
             fetchExpenses();
+        } else {
+            switchTab('analytics');
         }
 
     } else {
@@ -227,7 +234,8 @@ function handleLogout() {
 function switchTab(tabName) {
     const isAdmin = userRole === 'admin' || loggedInUser.toLowerCase().includes('admin');
 
-    if (tabName === 'expense' && !isAdmin) {
+    // Restrict Admin-Only tabs from non-admins
+    if ((tabName === 'expense' || tabName === 'create') && !isAdmin) {
         console.warn("Access Denied: Admin privileges required.");
         return;
     }
