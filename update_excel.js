@@ -117,17 +117,19 @@ async function runDailyReportAndEmail() {
         }
 
         // 4. Send Email via Nodemailer (Forced Custom DNS Lookup for IPv4)
-        console.log("📧 Dispatching Email via IPv4...");
+        console.log("📧 Dispatching Email via IPv4 on Port 587...");
 
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
+            port: 587,
+            secure: false, // Use STARTTLS instead of implicit TLS (Port 465)
             auth: { user: EMAIL_USER, pass: EMAIL_PASS },
             // FORCES DNS resolution to IPv4 addresses ONLY
             lookup: (hostname, options, callback) => {
                 dns.lookup(hostname, { family: 4 }, callback);
-            }
+            },
+            connectionTimeout: 10000, // 10s max connection attempt
+            greetingTimeout: 10000
         });
 
         const todayFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
