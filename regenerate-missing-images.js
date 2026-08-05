@@ -52,7 +52,7 @@ async function processMissingImages() {
                     paymentMode: row.payment_mode,
                     collectedBy: row.collected_by,
                     today: row.today,
-                    lang: 'mr'
+                    lang: 'en'
                 });
 
                 if (!pdfResult || !pdfResult.imageBase64) {
