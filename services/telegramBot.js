@@ -12,7 +12,19 @@ if (!BOT_TOKEN) {
     console.warn("⚠️ TELEGRAM_BOT_TOKEN is not defined. Telegram Bot Service disabled.");
     module.exports = null;
 } else {
-    const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+    // Force IPv4 DNS resolution for Telegram polling & API requests
+    const bot = new TelegramBot(BOT_TOKEN, {
+        polling: {
+            autoStart: true,
+            params: { timeout: 10 }
+        },
+        request: {
+            agentOptions: {
+                family: 4
+            }
+        }
+    });
+
     console.log("🤖 Telegram Control Bot initialized and listening for commands...");
 
     function isAuthorized(msg) {
@@ -32,8 +44,7 @@ Available Commands:
         bot.sendMessage(msg.chat.id, helpMessage, { parse_mode: 'Markdown' });
     });
 
-    // Directly execute function in-memory (No child process / exec hanging)
-    // Directly execute function in-memory (No child process / exec hanging)
+    // Directly execute function in-memory
     bot.onText(/\/reports/, async (msg) => {
         if (!isAuthorized(msg)) return bot.sendMessage(msg.chat.id, "⛔ Unauthorized access!");
 
@@ -59,8 +70,14 @@ ${duplicateText}`;
 
             bot.sendMessage(msg.chat.id, successMessage, { parse_mode: 'Markdown' });
         } catch (error) {
+            console.error("🚨 Report Error:", error);
             bot.sendMessage(msg.chat.id, `🚨 *Report Generation Failed!*\n\nError: \`${error.message}\``, { parse_mode: 'Markdown' });
         }
+    });
+
+    bot.onText(/\/status/, (msg) => {
+        if (!isAuthorized(msg)) return;
+        bot.sendMessage(msg.chat.id, "🟢 *Server Status:* Online & Responsive!", { parse_mode: 'Markdown' });
     });
 
     module.exports = bot;
