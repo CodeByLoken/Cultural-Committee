@@ -2,15 +2,24 @@ const { Pool } = require('pg');
 const xlsx = require('xlsx');
 const path = require('path');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
-const DB_URL = "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+// ====================================================
+// 1. CONFIGURATION & CREDENTIALS
+// ====================================================
+const DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+
+// Email Credentials
+const EMAIL_USER = process.env.SENDER_EMAIL || "parmar.loken@gmail.com";
+const EMAIL_PASS = process.env.SENDER_APP_PASSWORD || "friepduhfsatjvdr";
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || EMAIL_USER;
 
 const pool = new Pool({
     connectionString: DB_URL,
     ssl: { rejectUnauthorized: false }
 });
 
-// Helper function to identify building key from flat name
+// Helper: Extract Building Name from Flat Identifier
 function getBuildingName(flatStr) {
     const clean = String(flatStr).trim().toUpperCase();
     if (clean.startsWith('A-')) return 'Building_A';
@@ -23,11 +32,14 @@ function getBuildingName(flatStr) {
     return 'Other_Building';
 }
 
-async function generateBuildingWiseExcelReports() {
+// ====================================================
+// 2. MAIN WORKFLOW FUNCTION
+// ====================================================
+async function runDailyReportAndEmail() {
     console.log("🔄 Fetching receipt records from Neon Database...\n");
 
     try {
-        // 1. Fetch all receipts from DB
+        // 1. Query Receipts from Neon DB
         const dbRes = await pool.query(
             `SELECT receipt_no, LOWER(TRIM(flat)) AS flat_clean, flat, date 
              FROM receipts 
@@ -108,30 +120,42 @@ async function generateBuildingWiseExcelReports() {
             buildingGroups[bName].push(row);
         });
 
-        // 3. Ensure Output Directory Exists
+        // 3. Generate Formatted Date String for File Names (dd-mm-yyyy)
+        const now = new Date();
+        const day = String(now.getDate()).padStart(2, '0');
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const year = now.getFullYear();
+        const dateStr = `${day}-${month}-${year}`;
+
         const outputDir = path.join(__dirname, 'Building_Reports');
         if (!fs.existsSync(outputDir)) {
             fs.mkdirSync(outputDir);
         }
 
-        console.log("\n📁 Generating Building-Wise Excel Files...\n");
+        const emailAttachments = [];
 
-        // 4. Export individual Excel files
+        console.log("\n📁 Generating Date-Stamped Building Excel Files...\n");
+
         for (const [buildingName, groupRows] of Object.entries(buildingGroups)) {
             const newWb = xlsx.utils.book_new();
             const newWs = xlsx.utils.json_to_sheet(groupRows);
-
             xlsx.utils.book_append_sheet(newWb, newWs, buildingName);
 
-            const fileSavePath = path.join(outputDir, `Report_${buildingName}.xlsx`);
+            const fileNameWithDate = `Report_${buildingName}_${dateStr}.xlsx`;
+            const fileSavePath = path.join(outputDir, fileNameWithDate);
             xlsx.writeFile(newWb, fileSavePath);
 
             const paidCount = groupRows.filter(r => r['Payment'] === 'Paid').length;
-            console.log(` 📄 Created: Report_${buildingName}.xlsx ➔ (${paidCount}/${groupRows.length} Paid)`);
+            console.log(` 📄 Created: ${fileNameWithDate} ➔ (${paidCount}/${groupRows.length} Paid)`);
+
+            emailAttachments.push({
+                filename: fileNameWithDate,
+                path: fileSavePath
+            });
         }
 
         // ====================================================
-        // AUDIT REPORT: DUPLICATES & UNMATCHED
+        // AUDIT LOGGING
         // ====================================================
         console.log("\n--------------------------------------------------");
         if (duplicateFlats.length > 0) {
@@ -150,13 +174,44 @@ async function generateBuildingWiseExcelReports() {
         }
         console.log("--------------------------------------------------\n");
 
-        console.log(`🎉 Process Complete! All building reports saved in:\n👉 ${outputDir}\n`);
+        // 4. Send Email via Nodemailer
+        console.log("📧 Sending email with attached reports...");
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: EMAIL_USER,
+                pass: EMAIL_PASS
+            }
+        });
+
+        const todayFormatted = `${day}/${month}/${year}`;
+
+        const mailOptions = {
+            from: `"Purvanchal Portal Reports" <${EMAIL_USER}>`,
+            to: RECIPIENT_EMAIL,
+            subject: `📊 Building Collection Reports - ${todayFormatted}`,
+            html: `
+                <h3>Purvanchal Ganeshotsav Portal - Daily Collection Reports</h3>
+                <p>Hello Admin,</p>
+                <p>Attached are the updated building-wise collection spreadsheets generated for <strong>${todayFormatted}</strong>.</p>
+                <p><strong>Attached Reports:</strong> ${emailAttachments.length} Building Excel Files</p>
+                <br/>
+                <p><em>Automated system report.</em></p>
+            `,
+            attachments: emailAttachments
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log("🎉 Email successfully sent! Message ID:", info.messageId);
 
     } catch (error) {
-        console.error("❌ Error:", error.message);
+        console.error("❌ Process Failed:", error.message);
+        process.exit(1);
     } finally {
         await pool.end();
     }
 }
 
-generateBuildingWiseExcelReports();
+// Execute
+runDailyReportAndEmail();
