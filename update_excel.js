@@ -188,8 +188,12 @@ async function runDailyReportAndEmail() {
         // 4. Send Email via Nodemailer
         console.log("📧 Sending email with attached reports...");
 
+        // Forced IPv4 to fix ENETUNREACH error on Render
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            family: 4, // 👈 Forces IPv4 resolution
             auth: {
                 user: EMAIL_USER,
                 pass: EMAIL_PASS
