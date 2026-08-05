@@ -1,3 +1,4 @@
+const { exec } = require('child_process');
 const TelegramBotPackage = require('node-telegram-bot-api');
 const TelegramBot = typeof TelegramBotPackage === 'function'
     ? TelegramBotPackage
@@ -44,7 +45,7 @@ Available Commands:
         bot.sendMessage(msg.chat.id, helpMessage, { parse_mode: 'Markdown' });
     });
 
-    // Directly execute function in-memory
+    // 1. Reports Command
     bot.onText(/\/reports/, async (msg) => {
         if (!isAuthorized(msg)) return bot.sendMessage(msg.chat.id, "⛔ Unauthorized access!");
 
@@ -53,7 +54,6 @@ Available Commands:
         try {
             const result = await runDailyReportAndEmail();
 
-            // Format Duplicate Flat Section
             let duplicateText = "🔁 *No duplicate flat entries in DB.*";
             if (result.duplicates && result.duplicates.length > 0) {
                 const flatList = result.duplicates.map(f => `   • Flat: \`${f}\``).join('\n');
@@ -75,6 +75,33 @@ ${duplicateText}`;
         }
     });
 
+    // 2. Regenerate Images Command (Executes node regenerate-missing-images.js)
+    bot.onText(/\/regenerate_images/, async (msg) => {
+        if (!isAuthorized(msg)) return bot.sendMessage(msg.chat.id, "⛔ Unauthorized access!");
+
+        bot.sendMessage(msg.chat.id, "🖼️ *Starting image regeneration script...*\n_This may take a few moments._", { parse_mode: 'Markdown' });
+
+        exec('node regenerate-missing-images.js', (error, stdout, stderr) => {
+            if (error) {
+                console.error("🚨 Image Regeneration Error:", error);
+                const errSnippet = (stderr || error.message).slice(-1000); // Last 1000 chars
+                return bot.sendMessage(
+                    msg.chat.id,
+                    `🚨 *Image Regeneration Failed!*\n\n\`\`\`\n${errSnippet}\n\`\`\``,
+                    { parse_mode: 'Markdown' }
+                );
+            }
+
+            const outputSnippet = stdout.slice(-1000) || "Process finished with no output.";
+            bot.sendMessage(
+                msg.chat.id,
+                `✅ *Image Regeneration Completed Successfully!*\n\n\`\`\`\n${outputSnippet}\n\`\`\``,
+                { parse_mode: 'Markdown' }
+            );
+        });
+    });
+
+    // 3. Server Status Command
     bot.onText(/\/status/, (msg) => {
         if (!isAuthorized(msg)) return;
         bot.sendMessage(msg.chat.id, "🟢 *Server Status:* Online & Responsive!", { parse_mode: 'Markdown' });
