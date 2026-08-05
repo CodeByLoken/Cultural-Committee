@@ -7,16 +7,23 @@ const nodemailer = require('nodemailer');
 // ====================================================
 // 1. CONFIGURATION & CREDENTIALS
 // ====================================================
-const DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+let DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=verify-full";
+
+// Replace sslmode=require with sslmode=verify-full if present to remove driver warnings
+if (DB_URL.includes('sslmode=require')) {
+    DB_URL = DB_URL.replace('sslmode=require', 'sslmode=verify-full');
+}
 
 // Email Credentials
-const EMAIL_USER = process.env.SENDER_EMAIL || "parmar.loken@gmail.com";
-const EMAIL_PASS = process.env.SENDER_APP_PASSWORD || "friepduhfsatjvdr";
+const EMAIL_USER = process.env.SENDER_EMAIL || "YOUR_GMAIL_ADDRESS@gmail.com";
+const EMAIL_PASS = process.env.SENDER_APP_PASSWORD || "YOUR_16_CHAR_APP_PASSWORD";
 const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || EMAIL_USER;
 
 const pool = new Pool({
     connectionString: DB_URL,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000, // 10s connection timeout
+    idleTimeoutMillis: 10000
 });
 
 // Helper: Extract Building Name from Flat Identifier
@@ -38,9 +45,13 @@ function getBuildingName(flatStr) {
 async function runDailyReportAndEmail() {
     console.log("🔄 Fetching receipt records from Neon Database...\n");
 
+    let client;
     try {
+        // Connect with client timeout safety
+        client = await pool.connect();
+
         // 1. Query Receipts from Neon DB
-        const dbRes = await pool.query(
+        const dbRes = await client.query(
             `SELECT receipt_no, LOWER(TRIM(flat)) AS flat_clean, flat, date 
              FROM receipts 
              ORDER BY receipt_no ASC`
@@ -209,6 +220,7 @@ async function runDailyReportAndEmail() {
         console.error("❌ Process Failed:", error.message);
         process.exit(1);
     } finally {
+        if (client) client.release();
         await pool.end();
     }
 }
