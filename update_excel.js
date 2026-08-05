@@ -2,9 +2,9 @@ const { Client } = require('@neondatabase/serverless');
 const xlsx = require('xlsx');
 const path = require('path');
 const fs = require('fs');
-const nodemailer = require('nodemailer');
-const dns = require('dns');
+const { Resend } = require('resend');
 
+// 1. CONFIGURATION & CREDENTIALS
 let DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
 
 if (DB_URL.includes('sslmode=')) {
@@ -13,9 +13,8 @@ if (DB_URL.includes('sslmode=')) {
     DB_URL += (DB_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full';
 }
 
-const EMAIL_USER = process.env.SENDER_EMAIL || "YOUR_GMAIL_ADDRESS@gmail.com";
-const EMAIL_PASS = process.env.SENDER_APP_PASSWORD || "YOUR_16_CHAR_APP_PASSWORD";
-const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || EMAIL_USER;
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || "YOUR_GMAIL_ADDRESS@gmail.com";
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function getBuildingName(flatStr) {
     const clean = String(flatStr).trim().toUpperCase();
@@ -113,29 +112,20 @@ async function runDailyReportAndEmail() {
             const fileSavePath = path.join(outputDir, fileNameWithDate);
             xlsx.writeFile(newWb, fileSavePath);
 
-            emailAttachments.push({ filename: fileNameWithDate, path: fileSavePath });
+            // Resend format requires file buffer
+            emailAttachments.push({
+                filename: fileNameWithDate,
+                content: fs.readFileSync(fileSavePath)
+            });
         }
 
-        // 4. Send Email via Nodemailer (Forced Custom DNS Lookup for IPv4)
-        console.log("📧 Dispatching Email via IPv4 on Port 587...");
-
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false, // Use STARTTLS instead of implicit TLS (Port 465)
-            auth: { user: EMAIL_USER, pass: EMAIL_PASS },
-            // FORCES DNS resolution to IPv4 addresses ONLY
-            lookup: (hostname, options, callback) => {
-                dns.lookup(hostname, { family: 4 }, callback);
-            },
-            connectionTimeout: 10000, // 10s max connection attempt
-            greetingTimeout: 10000
-        });
+        // 4. Send Email via Resend HTTPS API
+        console.log("🚀 Dispatching Email via Resend API (Port 443 HTTPS)...");
 
         const todayFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-        await transporter.sendMail({
-            from: `"Purvanchal Portal Reports" <${EMAIL_USER}>`,
+        const response = await resend.emails.send({
+            from: 'Purvanchal Portal <onboarding@resend.dev>',
             to: RECIPIENT_EMAIL,
             subject: `📊 Building Collection Reports - ${todayFormatted}`,
             html: `
@@ -146,6 +136,12 @@ async function runDailyReportAndEmail() {
             `,
             attachments: emailAttachments
         });
+
+        if (response.error) {
+            throw new Error(`Resend Error: ${response.error.message}`);
+        }
+
+        console.log("🎉 Email sent successfully via Resend!");
 
         return {
             success: true,
@@ -166,5 +162,5 @@ module.exports = { runDailyReportAndEmail };
 if (require.main === module) {
     runDailyReportAndEmail()
         .then(res => console.log("🎉 Complete:", res))
-        .catch(err => console.err("❌ Failed:", err));
+        .catch(err => console.error("❌ Failed:", err));
 }
