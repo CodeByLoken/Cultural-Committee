@@ -4,10 +4,8 @@ const path = require('path');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
 
-// 1. CLEAN DATABASE URL & REMOVE WARNINGS
 let DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
 
-// Sanitize query params to avoid SSL warnings
 if (DB_URL.includes('sslmode=')) {
     DB_URL = DB_URL.replace(/sslmode=[^&]*/, 'sslmode=verify-full');
 } else {
@@ -37,7 +35,6 @@ async function runDailyReportAndEmail() {
 
     try {
         await client.connect();
-        console.log("✅ DB Connected.");
 
         // 1. Fetch Receipts
         const dbRes = await client.query(
@@ -47,8 +44,8 @@ async function runDailyReportAndEmail() {
         );
 
         const dbPaidMap = {};
-        const duplicateFlats = [];
         const flatCounts = {};
+        const duplicateFlats = [];
 
         dbRes.rows.forEach(row => {
             if (row.flat_clean) {
@@ -98,7 +95,7 @@ async function runDailyReportAndEmail() {
             buildingGroups[bName].push(row);
         });
 
-        // 3. Save Building Reports
+        // 3. Save Date-Stamped Building Reports
         const now = new Date();
         const dateStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
         const outputDir = path.join(__dirname, 'Building_Reports');
@@ -118,11 +115,7 @@ async function runDailyReportAndEmail() {
             emailAttachments.push({ filename: fileNameWithDate, path: fileSavePath });
         }
 
-        console.log(`📄 Built ${emailAttachments.length} building reports.`);
-
         // 4. Send Email via Nodemailer (Fast IPv4)
-        console.log("📧 Dispatching Email...");
-
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
             port: 465,
@@ -146,14 +139,25 @@ async function runDailyReportAndEmail() {
             attachments: emailAttachments
         });
 
-        console.log("🎉 Email sent successfully!");
+        return {
+            success: true,
+            count: emailAttachments.length,
+            receipts: dbRes.rows.length,
+            dateStr
+        };
 
     } catch (error) {
-        console.error("❌ Process Failed:", error.message);
-        process.exit(1);
+        throw error;
     } finally {
         await client.end().catch(() => { });
     }
 }
 
-runDailyReportAndEmail();
+// Export module function + CLI fallback
+module.exports = { runDailyReportAndEmail };
+
+if (require.main === module) {
+    runDailyReportAndEmail()
+        .then(res => console.log("🎉 Complete:", res))
+        .catch(err => console.error("❌ Failed:", err));
+}

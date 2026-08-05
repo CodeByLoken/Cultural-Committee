@@ -3,7 +3,7 @@ const TelegramBot = typeof TelegramBotPackage === 'function'
     ? TelegramBotPackage
     : (TelegramBotPackage.default || TelegramBotPackage);
 
-const { exec } = require('child_process');
+const { runDailyReportAndEmail } = require('../update_excel');
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
@@ -32,30 +32,22 @@ Available Commands:
         bot.sendMessage(msg.chat.id, helpMessage, { parse_mode: 'Markdown' });
     });
 
-    bot.onText(/\/reports/, (msg) => {
+    // Directly execute function in-memory (No child process / exec hanging)
+    bot.onText(/\/reports/, async (msg) => {
         if (!isAuthorized(msg)) return bot.sendMessage(msg.chat.id, "⛔ Unauthorized access!");
 
-        bot.sendMessage(msg.chat.id, "🔄 *Executing \`update_excel.js\`...*\nFetching Neon DB records and generating Excel reports...", { parse_mode: 'Markdown' });
+        bot.sendMessage(msg.chat.id, "🔄 *Generating Excel reports and emailing...*", { parse_mode: 'Markdown' });
 
-        exec('node update_excel.js', (error, stdout) => {
-            if (error) {
-                return bot.sendMessage(msg.chat.id, `🚨 *Execution Failed!*\n\nError: \`${error.message}\``, { parse_mode: 'Markdown' });
-            }
-            bot.sendMessage(msg.chat.id, `✅ *Success! Reports generated & emailed!*\n\n\`\`\`\n${stdout.slice(-300)}\n\`\`\``, { parse_mode: 'Markdown' });
-        });
-    });
-
-    bot.onText(/\/regenerate_images/, (msg) => {
-        if (!isAuthorized(msg)) return bot.sendMessage(msg.chat.id, "⛔ Unauthorized access!");
-
-        bot.sendMessage(msg.chat.id, "⏳ *Executing \`regenerate-missing-images.js\`...*\nScanning database for missing image links...", { parse_mode: 'Markdown' });
-
-        exec('node regenerate-missing-images.js', (error, stdout) => {
-            if (error) {
-                return bot.sendMessage(msg.chat.id, `🚨 *Execution Failed!*\n\nError: \`${error.message}\``, { parse_mode: 'Markdown' });
-            }
-            bot.sendMessage(msg.chat.id, `✅ *Image Regeneration Completed!*\n\n\`\`\`\n${stdout.slice(-300)}\n\`\`\``, { parse_mode: 'Markdown' });
-        });
+        try {
+            const result = await runDailyReportAndEmail();
+            bot.sendMessage(
+                msg.chat.id,
+                `✅ *Success! Reports generated & emailed!*\n\n📊 Total DB Receipts: ${result.receipts}\n📄 Excel Files Created: ${result.count}\n📅 Date Stamp: \`${result.dateStr}\``,
+                { parse_mode: 'Markdown' }
+            );
+        } catch (error) {
+            bot.sendMessage(msg.chat.id, `🚨 *Report Generation Failed!*\n\nError: \`${error.message}\``, { parse_mode: 'Markdown' });
+        }
     });
 
     bot.onText(/\/status/, (msg) => {
