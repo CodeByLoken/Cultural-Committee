@@ -1,3 +1,6 @@
+// Force IPv4 resolution globally to prevent Render IPv6 ENETUNREACH / ETIMEDOUT crashes
+require('dns').setDefaultResultOrder('ipv4first');
+
 const { exec } = require('child_process');
 const { Pool } = require('pg');
 const TelegramBotPackage = require('node-telegram-bot-api');
@@ -40,6 +43,13 @@ if (!BOT_TOKEN) {
         return String(msg.chat.id) === String(ADMIN_CHAT_ID);
     }
 
+    // Safe message wrapper to prevent uncaught network rejection crashes
+    function safeSend(chatId, text, options = { parse_mode: 'Markdown' }) {
+        return bot.sendMessage(chatId, text, options).catch((err) => {
+            console.error("⚠️ Failed to deliver Telegram message:", err.message);
+        });
+    }
+
     // Helper function to count receipts with missing images from Neon DB
     async function getMissingImagesCount() {
         try {
@@ -68,14 +78,14 @@ Available Commands:
 🖼️ \`/regenerate_images\` - Fix & regenerate all missing receipt images
 ℹ️ \`/status\` - Check server health & DB image status
         `;
-        bot.sendMessage(msg.chat.id, helpMessage, { parse_mode: 'Markdown' });
+        safeSend(msg.chat.id, helpMessage);
     });
 
     // 1. Reports Command
     bot.onText(/\/reports/, async (msg) => {
-        if (!isAuthorized(msg)) return bot.sendMessage(msg.chat.id, "⛔ Unauthorized access!");
+        if (!isAuthorized(msg)) return safeSend(msg.chat.id, "⛔ Unauthorized access!");
 
-        bot.sendMessage(msg.chat.id, "🔄 *Generating Excel reports and emailing...*", { parse_mode: 'Markdown' });
+        safeSend(msg.chat.id, "🔄 *Generating Excel reports and emailing...*");
 
         try {
             const result = await runDailyReportAndEmail();
@@ -92,51 +102,49 @@ Available Commands:
 📄 *Excel Files Created:* ${result.count}
 📅 *Date Stamp:* \`${result.dateStr}\`${duplicateText}`;
 
-            bot.sendMessage(msg.chat.id, successMessage, { parse_mode: 'Markdown' });
+            safeSend(msg.chat.id, successMessage);
         } catch (error) {
             console.error("🚨 Report Error:", error);
-            bot.sendMessage(msg.chat.id, `🚨 *Report Generation Failed!*\n\nError: \`${error.message}\``, { parse_mode: 'Markdown' });
+            safeSend(msg.chat.id, `🚨 *Report Generation Failed!*\n\nError: \`${error.message}\``);
         }
     });
 
     // 2. Check Missing Images Command
     bot.onText(/\/check_missing/, async (msg) => {
-        if (!isAuthorized(msg)) return bot.sendMessage(msg.chat.id, "⛔ Unauthorized access!");
+        if (!isAuthorized(msg)) return safeSend(msg.chat.id, "⛔ Unauthorized access!");
 
-        bot.sendMessage(msg.chat.id, "🔍 *Checking DB for missing images...*", { parse_mode: 'Markdown' });
+        safeSend(msg.chat.id, "🔍 *Checking DB for missing images...*");
 
         const count = await getMissingImagesCount();
 
         if (count > 0) {
             const warningMsg = `⚠️ *Found ${count} receipt(s) missing images in Neon DB!*\n\n👉 Send \`/regenerate_images\` to fix them now.`;
-            bot.sendMessage(msg.chat.id, warningMsg, { parse_mode: 'Markdown' });
+            safeSend(msg.chat.id, warningMsg);
         } else {
-            bot.sendMessage(msg.chat.id, "✅ *All receipt records have valid image URLs!*", { parse_mode: 'Markdown' });
+            safeSend(msg.chat.id, "✅ *All receipt records have valid image URLs!*");
         }
     });
 
-    // 3. Regenerate Images Command (Executes node regenerate-missing-images.js)
+    // 3. Regenerate Images Command
     bot.onText(/\/regenerate_images/, async (msg) => {
-        if (!isAuthorized(msg)) return bot.sendMessage(msg.chat.id, "⛔ Unauthorized access!");
+        if (!isAuthorized(msg)) return safeSend(msg.chat.id, "⛔ Unauthorized access!");
 
-        bot.sendMessage(msg.chat.id, "🖼️ *Starting image regeneration script...*\n_This may take a few moments._", { parse_mode: 'Markdown' });
+        safeSend(msg.chat.id, "🖼️ *Starting image regeneration script...*\n_This may take a few moments._");
 
         exec('node regenerate-missing-images.js', (error, stdout, stderr) => {
             if (error) {
                 console.error("🚨 Image Regeneration Error:", error);
                 const errSnippet = (stderr || error.message).slice(-1000);
-                return bot.sendMessage(
+                return safeSend(
                     msg.chat.id,
-                    `🚨 *Image Regeneration Failed!*\n\n\`\`\`\n${errSnippet}\n\`\`\``,
-                    { parse_mode: 'Markdown' }
+                    `🚨 *Image Regeneration Failed!*\n\n\`\`\`\n${errSnippet}\n\`\`\``
                 );
             }
 
             const outputSnippet = stdout.slice(-1000) || "Process finished with no output.";
-            bot.sendMessage(
+            safeSend(
                 msg.chat.id,
-                `✅ *Image Regeneration Completed Successfully!*\n\n\`\`\`\n${outputSnippet}\n\`\`\``,
-                { parse_mode: 'Markdown' }
+                `✅ *Image Regeneration Completed Successfully!*\n\n\`\`\`\n${outputSnippet}\n\`\`\``
             );
         });
     });
@@ -153,7 +161,7 @@ Available Commands:
         }
 
         const statusMessage = `🟢 *Server Status:* Online & Responsive!\n🖼️ *Image Audit:* ${imageAuditStatus}`;
-        bot.sendMessage(msg.chat.id, statusMessage, { parse_mode: 'Markdown' });
+        safeSend(msg.chat.id, statusMessage);
     });
 
     module.exports = bot;
