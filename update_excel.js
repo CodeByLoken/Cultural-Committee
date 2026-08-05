@@ -3,6 +3,7 @@ const xlsx = require('xlsx');
 const path = require('path');
 const fs = require('fs');
 const nodemailer = require('nodemailer');
+const dns = require('dns');
 
 let DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
 
@@ -115,19 +116,19 @@ async function runDailyReportAndEmail() {
             emailAttachments.push({ filename: fileNameWithDate, path: fileSavePath });
         }
 
-        // 4. Send Email via Nodemailer (Fast IPv4)
-        const dns = require('dns');
+        // 4. Send Email via Nodemailer (Forced Custom DNS Lookup for IPv4)
+        console.log("📧 Dispatching Email via IPv4...");
 
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
             port: 465,
             secure: true,
             auth: { user: EMAIL_USER, pass: EMAIL_PASS },
-            // Force DNS lookup to ONLY return IPv4 addresses (family: 4)
+            // FORCES DNS resolution to IPv4 addresses ONLY
             lookup: (hostname, options, callback) => {
                 dns.lookup(hostname, { family: 4 }, callback);
             }
-        })
+        });
 
         const todayFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
@@ -158,11 +159,10 @@ async function runDailyReportAndEmail() {
     }
 }
 
-// Export module function + CLI fallback
 module.exports = { runDailyReportAndEmail };
 
 if (require.main === module) {
     runDailyReportAndEmail()
         .then(res => console.log("🎉 Complete:", res))
-        .catch(err => console.error("❌ Failed:", err));
+        .catch(err => console.err("❌ Failed:", err));
 }
