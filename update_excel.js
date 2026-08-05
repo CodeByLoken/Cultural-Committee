@@ -116,13 +116,18 @@ async function runDailyReportAndEmail() {
         }
 
         // 4. Send Email via Nodemailer (Fast IPv4)
+        const dns = require('dns');
+
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
             port: 465,
             secure: true,
-            family: 4,
-            auth: { user: EMAIL_USER, pass: EMAIL_PASS }
-        });
+            auth: { user: EMAIL_USER, pass: EMAIL_PASS },
+            // Force DNS lookup to ONLY return IPv4 addresses (family: 4)
+            lookup: (hostname, options, callback) => {
+                dns.lookup(hostname, { family: 4 }, callback);
+            }
+        })
 
         const todayFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
