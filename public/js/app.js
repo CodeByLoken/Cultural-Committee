@@ -896,6 +896,11 @@ async function fetchAnalyticsData() {
 
         // 1. Render Building / Tower Stats with Participation Bar
         if (data.buildingSummary && data.buildingSummary.length > 0) {
+            // Sort buildings alphabetically (Building A, B, C, D1, D2, E, F1)
+            data.buildingSummary.sort((a, b) =>
+                (a.building || '').localeCompare(b.building || '', undefined, { numeric: true, sensitivity: 'base' })
+            );
+
             let bHtml = '';
             data.buildingSummary.forEach(b => {
                 const totalCapacity = TOTAL_FLATS_MAP[b.building] || 0;
