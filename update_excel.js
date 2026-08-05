@@ -147,6 +147,7 @@ async function runDailyReportAndEmail() {
             success: true,
             count: emailAttachments.length,
             receipts: dbRes.rows.length,
+            duplicates: duplicateFlats,
             dateStr
         };
 

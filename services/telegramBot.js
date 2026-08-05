@@ -33,6 +33,7 @@ Available Commands:
     });
 
     // Directly execute function in-memory (No child process / exec hanging)
+    // Directly execute function in-memory (No child process / exec hanging)
     bot.onText(/\/reports/, async (msg) => {
         if (!isAuthorized(msg)) return bot.sendMessage(msg.chat.id, "⛔ Unauthorized access!");
 
@@ -40,19 +41,26 @@ Available Commands:
 
         try {
             const result = await runDailyReportAndEmail();
-            bot.sendMessage(
-                msg.chat.id,
-                `✅ *Success! Reports generated & emailed!*\n\n📊 Total DB Receipts: ${result.receipts}\n📄 Excel Files Created: ${result.count}\n📅 Date Stamp: \`${result.dateStr}\``,
-                { parse_mode: 'Markdown' }
-            );
+
+            // Format Duplicate Flat Section
+            let duplicateText = "🔁 *No duplicate flat entries in DB.*";
+            if (result.duplicates && result.duplicates.length > 0) {
+                const flatList = result.duplicates.map(f => `   • Flat: \`${f}\``).join('\n');
+                duplicateText = `🔁 *DUPLICATE RECEIPTS FOUND IN DB (${result.duplicates.length}):*\n${flatList}`;
+            }
+
+            const successMessage = `✅ *Success! Reports generated & emailed!*
+
+📊 *Total DB Receipts:* ${result.receipts}
+📄 *Excel Files Created:* ${result.count}
+📅 *Date Stamp:* \`${result.dateStr}\`
+
+${duplicateText}`;
+
+            bot.sendMessage(msg.chat.id, successMessage, { parse_mode: 'Markdown' });
         } catch (error) {
             bot.sendMessage(msg.chat.id, `🚨 *Report Generation Failed!*\n\nError: \`${error.message}\``, { parse_mode: 'Markdown' });
         }
-    });
-
-    bot.onText(/\/status/, (msg) => {
-        if (!isAuthorized(msg)) return;
-        bot.sendMessage(msg.chat.id, "🟢 *Server Status:* Online & Responsive!", { parse_mode: 'Markdown' });
     });
 
     module.exports = bot;
