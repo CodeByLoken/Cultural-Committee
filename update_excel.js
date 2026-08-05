@@ -13,7 +13,7 @@ if (DB_URL.includes('sslmode=')) {
     DB_URL += (DB_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full';
 }
 
-const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || "YOUR_GMAIL_ADDRESS@gmail.com";
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || "parmar.loken@gmail.com";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 function getBuildingName(flatStr) {
