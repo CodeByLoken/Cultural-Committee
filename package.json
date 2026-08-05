@@ -9,6 +9,7 @@
     "build": "npm install && npx puppeteer browsers install chrome"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.1",
     "dotenv": "^17.4.2",
