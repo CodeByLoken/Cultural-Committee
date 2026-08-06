@@ -1,8 +1,8 @@
+require('dns').setDefaultResultOrder('ipv4first');
 const { Client } = require('@neondatabase/serverless');
 const xlsx = require('xlsx');
 const path = require('path');
 const fs = require('fs');
-const nodemailer = require('nodemailer');
 
 // 1. CONFIGURATION & CREDENTIALS
 let DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
@@ -12,21 +12,7 @@ if (DB_URL.includes('sslmode=')) {
     DB_URL += (DB_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full';
 }
 
-const EMAIL_USER = process.env.EMAIL_USER || "parmar.loken@gmail.com";
-const EMAIL_PASS = process.env.EMAIL_PASS; // 16-character Gmail App Password
 const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || process.env.ADMIN_EMAIL || "parmar.loken@gmail.com";
-
-// Setup Gmail SMTP Transporter (Forced IPv4 & Port 587 for Render compatibility)
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // TLS via STARTTLS
-    auth: {
-        user: EMAIL_USER,
-        pass: EMAIL_PASS
-    },
-    family: 4 // Force IPv4 connection to prevent ENETUNREACH on Render
-});
 
 function getBuildingName(flatStr) {
     const clean = String(flatStr).trim().toUpperCase();
@@ -124,25 +110,24 @@ async function runDailyReportAndEmail() {
             const fileSavePath = path.join(outputDir, fileNameWithDate);
             xlsx.writeFile(newWb, fileSavePath);
 
-            // Nodemailer attachment object format
+            // Resend API Base64 attachment format
             emailAttachments.push({
                 filename: fileNameWithDate,
-                path: fileSavePath
+                content: fs.readFileSync(fileSavePath).toString('base64')
             });
         }
 
-        // 4. Send Email via Gmail SMTP
-        console.log("🚀 Dispatching Email via Gmail SMTP...");
+        // 4. Send Email via Direct HTTPS Fetch (Port 443 - Never Blocked on Render)
+        console.log("🚀 Dispatching Email via Resend HTTPS API (Port 443)...");
 
         const todayFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-        // Support comma-separated emails or single string
         const recipientList = RECIPIENT_EMAIL.includes(',')
             ? RECIPIENT_EMAIL.split(',').map(e => e.trim())
-            : RECIPIENT_EMAIL;
+            : [RECIPIENT_EMAIL.trim()];
 
-        const mailOptions = {
-            from: `"Purvanchal Portal" <${EMAIL_USER}>`,
+        const resendPayload = {
+            from: 'Purvanchal Portal <onboarding@resend.dev>',
             to: recipientList,
             subject: `📊 Building Collection Reports - ${todayFormatted}`,
             html: `
@@ -154,8 +139,22 @@ async function runDailyReportAndEmail() {
             attachments: emailAttachments
         };
 
-        const mailInfo = await transporter.sendMail(mailOptions);
-        console.log("🎉 Email sent successfully via Gmail SMTP! Message ID:", mailInfo.messageId);
+        const apiResponse = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(resendPayload)
+        });
+
+        const resData = await apiResponse.json();
+
+        if (!apiResponse.ok) {
+            throw new Error(`Resend HTTPS Error: ${resData.message || JSON.stringify(resData)}`);
+        }
+
+        console.log("🎉 Email sent successfully via Resend HTTPS API! ID:", resData.id);
 
         return {
             success: true,
