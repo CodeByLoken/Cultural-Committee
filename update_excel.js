@@ -2,19 +2,28 @@ const { Client } = require('@neondatabase/serverless');
 const xlsx = require('xlsx');
 const path = require('path');
 const fs = require('fs');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 
 // 1. CONFIGURATION & CREDENTIALS
 let DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
-
 if (DB_URL.includes('sslmode=')) {
     DB_URL = DB_URL.replace(/sslmode=[^&]*/, 'sslmode=verify-full');
 } else {
     DB_URL += (DB_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full';
 }
 
-const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || "parmar.loken@gmail.com";
-const resend = new Resend(process.env.RESEND_API_KEY);
+const EMAIL_USER = process.env.EMAIL_USER || "parmar.loken@gmail.com";
+const EMAIL_PASS = process.env.EMAIL_PASS; // 16-character Gmail App Password
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || process.env.ADMIN_EMAIL || "parmar.loken@gmail.com";
+
+// Setup Gmail SMTP Transporter
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS
+    }
+});
 
 function getBuildingName(flatStr) {
     const clean = String(flatStr).trim().toUpperCase();
@@ -112,21 +121,26 @@ async function runDailyReportAndEmail() {
             const fileSavePath = path.join(outputDir, fileNameWithDate);
             xlsx.writeFile(newWb, fileSavePath);
 
-            // Resend format requires file buffer
+            // Nodemailer attachment object format
             emailAttachments.push({
                 filename: fileNameWithDate,
-                content: fs.readFileSync(fileSavePath)
+                path: fileSavePath
             });
         }
 
-        // 4. Send Email via Resend HTTPS API
-        console.log("🚀 Dispatching Email via Resend API (Port 443 HTTPS)...");
+        // 4. Send Email via Gmail SMTP
+        console.log("🚀 Dispatching Email via Gmail SMTP...");
 
         const todayFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-        const response = await resend.emails.send({
-            from: 'Purvanchal Portal <onboarding@resend.dev>',
-            to: RECIPIENT_EMAIL,
+        // Support comma-separated emails or single string
+        const recipientList = RECIPIENT_EMAIL.includes(',')
+            ? RECIPIENT_EMAIL.split(',').map(e => e.trim())
+            : RECIPIENT_EMAIL;
+
+        const mailOptions = {
+            from: `"Purvanchal Portal" <${EMAIL_USER}>`,
+            to: recipientList,
             subject: `📊 Building Collection Reports - ${todayFormatted}`,
             html: `
                 <h3>Purvanchal Ganeshotsav Portal - Daily Collection Reports</h3>
@@ -135,13 +149,10 @@ async function runDailyReportAndEmail() {
                 <p><strong>Attached Reports:</strong> ${emailAttachments.length} Building Excel Files</p>
             `,
             attachments: emailAttachments
-        });
+        };
 
-        if (response.error) {
-            throw new Error(`Resend Error: ${response.error.message}`);
-        }
-
-        console.log("🎉 Email sent successfully via Resend!");
+        const mailInfo = await transporter.sendMail(mailOptions);
+        console.log("🎉 Email sent successfully via Gmail SMTP! Message ID:", mailInfo.messageId);
 
         return {
             success: true,
