@@ -16,13 +16,16 @@ const EMAIL_USER = process.env.EMAIL_USER || "parmar.loken@gmail.com";
 const EMAIL_PASS = process.env.EMAIL_PASS; // 16-character Gmail App Password
 const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || process.env.ADMIN_EMAIL || "parmar.loken@gmail.com";
 
-// Setup Gmail SMTP Transporter
+// Setup Gmail SMTP Transporter (Forced IPv4 & Port 587 for Render compatibility)
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // TLS via STARTTLS
     auth: {
         user: EMAIL_USER,
         pass: EMAIL_PASS
-    }
+    },
+    family: 4 // Force IPv4 connection to prevent ENETUNREACH on Render
 });
 
 function getBuildingName(flatStr) {
