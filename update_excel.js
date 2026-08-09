@@ -1,18 +1,20 @@
-require('dns').setDefaultResultOrder('ipv4first');
 const { Client } = require('@neondatabase/serverless');
 const xlsx = require('xlsx');
 const path = require('path');
 const fs = require('fs');
+const { Resend } = require('resend');
 
 // 1. CONFIGURATION & CREDENTIALS
 let DB_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_4aS3XGvWsijz@ep-falling-hill-az6l7swx-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+
 if (DB_URL.includes('sslmode=')) {
     DB_URL = DB_URL.replace(/sslmode=[^&]*/, 'sslmode=verify-full');
 } else {
     DB_URL += (DB_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full';
 }
 
-const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || process.env.ADMIN_EMAIL || "parmar.loken@gmail.com";
+const RECIPIENT_EMAIL = process.env.RECIPIENT_EMAIL || "parmar.loken@gmail.com";
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function getBuildingName(flatStr) {
     const clean = String(flatStr).trim().toUpperCase();
@@ -110,25 +112,21 @@ async function runDailyReportAndEmail() {
             const fileSavePath = path.join(outputDir, fileNameWithDate);
             xlsx.writeFile(newWb, fileSavePath);
 
-            // Resend API Base64 attachment format
+            // Resend format requires file buffer
             emailAttachments.push({
                 filename: fileNameWithDate,
-                content: fs.readFileSync(fileSavePath).toString('base64')
+                content: fs.readFileSync(fileSavePath)
             });
         }
 
-        // 4. Send Email via Direct HTTPS Fetch (Port 443 - Never Blocked on Render)
-        console.log("🚀 Dispatching Email via Resend HTTPS API (Port 443)...");
+        // 4. Send Email via Resend HTTPS API
+        console.log("🚀 Dispatching Email via Resend API (Port 443 HTTPS)...");
 
         const todayFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
-        const recipientList = RECIPIENT_EMAIL.includes(',')
-            ? RECIPIENT_EMAIL.split(',').map(e => e.trim())
-            : [RECIPIENT_EMAIL.trim()];
-
-        const resendPayload = {
+        const response = await resend.emails.send({
             from: 'Purvanchal Portal <onboarding@resend.dev>',
-            to: recipientList,
+            to: RECIPIENT_EMAIL,
             subject: `📊 Building Collection Reports - ${todayFormatted}`,
             html: `
                 <h3>Purvanchal Ganeshotsav Portal - Daily Collection Reports</h3>
@@ -137,24 +135,13 @@ async function runDailyReportAndEmail() {
                 <p><strong>Attached Reports:</strong> ${emailAttachments.length} Building Excel Files</p>
             `,
             attachments: emailAttachments
-        };
-
-        const apiResponse = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(resendPayload)
         });
 
-        const resData = await apiResponse.json();
-
-        if (!apiResponse.ok) {
-            throw new Error(`Resend HTTPS Error: ${resData.message || JSON.stringify(resData)}`);
+        if (response.error) {
+            throw new Error(`Resend Error: ${response.error.message}`);
         }
 
-        console.log("🎉 Email sent successfully via Resend HTTPS API! ID:", resData.id);
+        console.log("🎉 Email sent successfully via Resend!");
 
         return {
             success: true,

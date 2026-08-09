@@ -120,8 +120,11 @@ async function generateReceiptPDF(data) {
     <html>
     <head>
       <meta charset="UTF-8">
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
       <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', 'Noto Sans Devanagari', 'Arial', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Noto Sans Devanagari', 'Segoe UI', Arial, sans-serif; }
         body { padding: 12px; background: #fff; width: 720px; margin: 0 auto; }
         #receiptContainer { width: 100%; background: #fff; padding: 4px; }
         .receipt-card { border: 3px solid #c1121f; border-radius: 14px; padding: 4px; background: #fffdf7; margin-bottom: 12px; }
@@ -219,8 +222,16 @@ async function generateReceiptPDF(data) {
 
         page = await global.sharedBrowser.newPage();
         await page.setViewport({ width: 750, height: 900, deviceScaleFactor: 1.5 });
+
+        // 1. Load HTML content
         await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
 
+        // 2. Wait explicitly for Google Devanagari Fonts to load and render before taking screenshot
+        await page.evaluate(async () => {
+            await document.fonts.ready;
+        });
+
+        // 3. Take PNG screenshot of container
         const element = await page.$('#receiptContainer');
         const imageBase64 = await element.screenshot({ encoding: 'base64', type: 'png' });
 
