@@ -48,7 +48,7 @@ const labels = {
             { name: "गणेश चतुर्थी उत्सव (१० दिवस)", iconKey: "ganesh" },
             { name: "नवरात्री उत्सव व गरबा दांडिया", iconKey: "dandiya" },
             { name: "२६ जानेवारी (प्रजासत्ताक दिन)", iconKey: "chakra" },
-            { name: "होळी महोत्सव व रंगपंचमी", iconKey: "holi" }
+            { name: "होळी महोत्सव", iconKey: "holi" }
         ]
     },
     hi: {
@@ -72,7 +72,7 @@ const labels = {
             { name: "गणेश चतुर्थी उत्सव (10 दिवस)", iconKey: "ganesh" },
             { name: "नवरात्रि उत्सव एवं गरबा", iconKey: "dandiya" },
             { name: "26 जनवरी (गणतंत्र दिवस)", iconKey: "chakra" },
-            { name: "होली उत्सव एवं रंगपंचमी", iconKey: "holi" }
+            { name: "होली उत्सव", iconKey: "holi" }
         ]
     },
     en: {
@@ -247,3 +247,4 @@ async function generateReceiptPDF(data) {
 }
 
 module.exports = { generateReceiptPDF };
+;
