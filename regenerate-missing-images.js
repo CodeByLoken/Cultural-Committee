@@ -20,8 +20,10 @@ async function processMissingImages() {
     try {
         console.log("Searching for receipts with missing image_url...");
 
+        // Safely retrieve 'lang', falling back to 'mr' if column or value is null
         const query = `
-      SELECT receipt_no, date AS today, name, whatsapp, flat, amount, amount_words, family_count, payment_mode, collected_by
+      SELECT receipt_no, date AS today, name, whatsapp, flat, amount, amount_words, family_count, payment_mode, collected_by,
+             COALESCE(to_jsonb(receipts.*)->>'lang', 'en') AS lang
       FROM receipts
       WHERE image_url IS NULL OR image_url = '' OR image_url = 'EMPTY_STRING'
       ORDER BY receipt_no ASC;
@@ -37,10 +39,11 @@ async function processMissingImages() {
         console.log(`Found ${rows.length} records needing image generation.\n`);
 
         for (const [index, row] of rows.entries()) {
-            console.log(`[${index + 1}/${rows.length}] Processing Receipt #${row.receipt_no} for ${row.name} (${row.flat})...`);
+            const receiptLang = row.lang || 'en';
+            console.log(`[${index + 1}/${rows.length}] Processing Receipt #${row.receipt_no} for ${row.name} (${row.flat}) [Language: ${receiptLang}]...`);
 
             try {
-                // 1. Generate PNG Screenshot
+                // 1. Generate PNG Screenshot using stored DB language
                 const pdfResult = await generateReceiptPDF({
                     receiptNo: row.receipt_no,
                     name: row.name,
@@ -52,7 +55,7 @@ async function processMissingImages() {
                     paymentMode: row.payment_mode,
                     collectedBy: row.collected_by,
                     today: row.today,
-                    lang: 'mr'
+                    lang: receiptLang // Pass language retrieved from DB
                 });
 
                 if (!pdfResult || !pdfResult.imageBase64) {

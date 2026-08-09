@@ -161,17 +161,17 @@ app.post('/api/save-receipt', async (req, res) => {
         await client.query('BEGIN');
 
         const insertQuery = `
-            INSERT INTO receipts (date, name, whatsapp, flat, amount, amount_words, family_count, payment_mode, collected_by)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING receipt_no;
-        `;
-        const values = [today, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy];
+           INSERT INTO receipts (date, name, whatsapp, flat, amount, amount_words, family_count, payment_mode, collected_by, lang)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+           RETURNING receipt_no;
+       `;
+        const values = [today, name, whatsapp, flat, amount, amountWords, familyCount, paymentMode, collectedBy, lang || 'en'];
         const dbRes = await client.query(insertQuery, values);
 
         const receiptNo = dbRes.rows[0].receipt_no;
         await client.query('COMMIT');
 
-        console.log(`[DB SUCCESS] Receipt #${receiptNo} created for ${name} (${flat})`);
+        console.log(`[DB SUCCESS] Receipt #${receiptNo} created for ${name} (${flat}) [Lang: ${lang || 'en'}]`);
 
         return res.json({
             status: 'success',
@@ -184,7 +184,7 @@ app.post('/api/save-receipt', async (req, res) => {
             whatsapp,
             paymentMode,
             collectedBy,
-            lang: lang || 'mr'
+            lang: lang || 'en'
         });
 
     } catch (error) {
