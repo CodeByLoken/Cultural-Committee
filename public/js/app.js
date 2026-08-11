@@ -24,9 +24,9 @@ const i18n = {
         expTitle: "💸 खर्च नोंदवा (Add New Expense)",
         expHeaderLbl: "१) खर्च प्रकार / कार्यक्रम (Category)",
         expDateLbl: "२) दिनांक (Date)",
-        expVendorLbl: "३) दुकानदार / व्हेंडर (Vendor Name)",
-        expSummaryLbl: "४) खर्चाचा तपशील (Description)",
-        expAmtLbl: "५) रक्कम (Amount ₹)",
+        expVendorLbl: "५) दुकानदार / व्हेंडर (Vendor Name)",
+        expSummaryLbl: "६) खर्चाचा तपशील (Description)",
+        expAmtLbl: "४) रक्कम (Amount ₹)",
         expBtnSave: "खर्च सेव्ह करा (Save Expense)",
         expLedgerTitle: "📊 खर्चाचे विवरण (Expenses Ledger)",
         expHeaders: {
@@ -60,9 +60,9 @@ const i18n = {
         expTitle: "💸 खर्च दर्ज करें (Add New Expense)",
         expHeaderLbl: "1) खर्च श्रेणी / कार्यक्रम (Category)",
         expDateLbl: "2) दिनांक (Date)",
-        expVendorLbl: "3) विक्रेता / ठेकेदार (Vendor Name)",
-        expSummaryLbl: "4) खर्च विवरण (Description)",
-        expAmtLbl: "5) राशि (Amount ₹)",
+        expVendorLbl: "5) विक्रेता / ठेकेदार (Vendor Name)",
+        expSummaryLbl: "6) खर्च विवरण (Description)",
+        expAmtLbl: "4) राशि (Amount ₹)",
         expBtnSave: "खर्च सहेजें (Save Expense)",
         expLedgerTitle: "📊 खर्च विवरण (Expenses Ledger)",
         expHeaders: {
@@ -96,9 +96,9 @@ const i18n = {
         expTitle: "💸 Record New Expense",
         expHeaderLbl: "1) Expense Category / Event",
         expDateLbl: "2) Expense Date",
-        expVendorLbl: "3) Vendor / Payee Name",
-        expSummaryLbl: "4) Expense Description / Summary",
-        expAmtLbl: "5) Amount (₹)",
+        expVendorLbl: "5) Vendor / Payee Name",
+        expSummaryLbl: "6) Expense Description / Summary",
+        expAmtLbl: "4) Amount (₹)",
         expBtnSave: "Save Expense Record",
         expLedgerTitle: "📊 Category-Wise Expenses Ledger",
         expHeaders: {
@@ -209,9 +209,6 @@ function handleLogin() {
 
         fetchStats();
 
-        // Default tab selection based on role:
-        // Admin defaults to 'create' (New Receipt)
-        // Normal User defaults to 'analytics' (Analytics & Stats)
         if (isAdmin) {
             switchTab('create');
             fetchExpenses();
@@ -234,7 +231,6 @@ function handleLogout() {
 function switchTab(tabName) {
     const isAdmin = userRole === 'admin' || loggedInUser.toLowerCase().includes('admin');
 
-    // Restrict Admin-Only tabs from non-admins
     if ((tabName === 'expense' || tabName === 'create') && !isAdmin) {
         console.warn("Access Denied: Admin privileges required.");
         return;
@@ -587,6 +583,7 @@ async function saveExpense() {
         summary: document.getElementById('expSummary').value.trim(),
         vendor: document.getElementById('expVendor').value.trim(),
         amount: document.getElementById('expAmount').value.trim(),
+        expenseType: document.getElementById('expType').value,
         createdBy: loggedInUser
     };
 
@@ -638,11 +635,9 @@ async function fetchExpenses() {
 function formatDateClean(dateStr) {
     if (!dateStr) return '-';
 
-    // Normalize slashes to hyphens for uniform processing
     let cleanStr = String(dateStr).trim().replace(/\//g, '-');
     let parts = cleanStr.split('-');
 
-    // Case 1: Already YYYY-MM-DD (e.g., 2026-08-02)
     if (parts.length === 3 && parts[0].length === 4) {
         const day = parts[2].padStart(2, '0');
         const month = parts[1].padStart(2, '0');
@@ -650,22 +645,18 @@ function formatDateClean(dateStr) {
         return `${day}/${month}/${year}`;
     }
 
-    // Case 2: Already DD-MM-YYYY or MM-DD-YYYY (e.g., 03-08-2026)
     if (parts.length === 3 && parts[2].length === 4) {
         const p1 = parts[0].padStart(2, '0');
         const p2 = parts[1].padStart(2, '0');
         const year = parts[2];
 
-        // If first part is > 12, it's guaranteed to be DD-MM-YYYY
         if (Number(p1) > 12) {
             return `${p1}/${p2}/${year}`;
         }
 
-        // Otherwise assume DD/MM/YYYY
         return `${p1}/${p2}/${year}`;
     }
 
-    // Case 3: Fallback using JavaScript Date parser
     const d = new Date(dateStr);
     if (!isNaN(d.getTime())) {
         const day = String(d.getDate()).padStart(2, '0');
@@ -748,9 +739,10 @@ function renderExpensesTable() {
             <thead>
               <tr>
                 <th style="width: 15%;">${t.tableCols.date}</th>
-                <th style="width: 40%;">${t.tableCols.summary}</th>
+                <th style="width: 35%;">${t.tableCols.summary}</th>
                 <th style="width: 25%;">${t.tableCols.vendor}</th>
-                <th style="width: 20%;">${t.tableCols.amount}</th>
+                <th style="width: 15%;">Mode</th>
+                <th style="width: 10%;">${t.tableCols.amount}</th>
               </tr>
             </thead>
             <tbody>`;
@@ -758,10 +750,12 @@ function renderExpensesTable() {
         items.forEach(row => {
             const amt = Number(row.amount) || 0;
             subtotal += amt;
+            const modeText = (row.expenseType || 'online').toLowerCase() === 'cash' ? '💵 Cash' : '💳 Online';
             html += `<tr>
         <td class="nowrap">${formatDateClean(row.date)}</td>
         <td>${row.summary}</td>
         <td>${row.vendor}</td>
+        <td><small>${modeText}</small></td>
         <td><strong>₹${amt.toLocaleString('en-IN')}</strong></td>
       </tr>`;
         });
@@ -770,7 +764,7 @@ function renderExpensesTable() {
             </tbody>
             <tfoot>
               <tr class="subtotal-row">
-                <td colspan="3" class="right-text"><strong>Subtotal (${categoryTitle}):</strong></td>
+                <td colspan="4" class="right-text"><strong>Subtotal (${categoryTitle}):</strong></td>
                 <td><strong>₹${subtotal.toLocaleString('en-IN')}</strong></td>
               </tr>
             </tfoot>
@@ -827,7 +821,6 @@ function printCategoryTable(category) {
 
     printWin.document.close();
 }
-
 function printExpenseStatement() {
     window.print();
 }
@@ -876,6 +869,7 @@ async function searchRecords() {
 async function fetchAnalyticsData() {
     const bContainer = document.getElementById('buildingStatsContainer');
     const pContainer = document.getElementById('paymentModeStatsContainer');
+    const bBalanceContainer = document.getElementById('availableBalanceContainer');
     const tbody = document.getElementById('dailyLedgerTbody');
 
     const TOTAL_FLATS_MAP = {
@@ -894,9 +888,8 @@ async function fetchAnalyticsData() {
 
         if (data.status !== 'success') return;
 
-        // 1. Render Building / Tower Stats with Participation Bar
+        // 1. Render Building / Tower Stats
         if (data.buildingSummary && data.buildingSummary.length > 0) {
-            // Sort buildings alphabetically (Building A, B, C, D1, D2, E, F1)
             data.buildingSummary.sort((a, b) =>
                 (a.building || '').localeCompare(b.building || '', undefined, { numeric: true, sensitivity: 'base' })
             );
@@ -929,16 +922,25 @@ async function fetchAnalyticsData() {
             bContainer.innerHTML = bHtml;
         }
 
-        // 2. Render Payment Mode Summary
+        // 2. Render Payment Mode Summary & Available Balance Calculation
+        let cashCollected = 0;
+        let onlineCollected = 0;
+
         if (data.paymentModeSummary && data.paymentModeSummary.length > 0) {
             let pHtml = '<div class="payment-mode-flex">';
             data.paymentModeSummary.forEach(p => {
-                const icon = p.mode.toLowerCase().includes('cash') ? '💵' : '📱';
+                const isCash = (p.mode || '').toLowerCase() === 'cash';
+                const amt = Number(p.total_amount) || 0;
+
+                if (isCash) cashCollected += amt;
+                else onlineCollected += amt;
+
+                const icon = isCash ? '💵' : '📱';
                 pHtml += `
                     <div class="payment-mode-pill">
                         <span class="p-icon">${icon}</span>
                         <div>
-                            <strong>${p.mode}:</strong> ₹${Number(p.total_amount).toLocaleString('en-IN')}
+                            <strong>${p.mode}:</strong> ₹${amt.toLocaleString('en-IN')}
                             <small>(${p.total_receipts} txns)</small>
                         </div>
                     </div>
@@ -946,6 +948,44 @@ async function fetchAnalyticsData() {
             });
             pHtml += '</div>';
             pContainer.innerHTML = pHtml;
+        }
+
+        // Calculate Expense Splits
+        let cashExpenses = 0;
+        let onlineExpenses = 0;
+
+        if (data.expenseModeSummary && data.expenseModeSummary.length > 0) {
+            data.expenseModeSummary.forEach(e => {
+                const isCash = (e.mode || '').toLowerCase() === 'cash';
+                const amt = Number(e.total_amount) || 0;
+                if (isCash) cashExpenses += amt;
+                else onlineExpenses += amt;
+            });
+        }
+
+        // Calculate Net Available Balances
+        const availableCash = cashCollected - cashExpenses;
+        const availableOnline = onlineCollected - onlineExpenses;
+        const totalAvailable = availableCash + availableOnline;
+
+        if (bBalanceContainer) {
+            bBalanceContainer.innerHTML = `
+                <div style="background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <h4 style="margin-bottom: 8px; color: #003049;">⚖️ Available Net Balance</h4>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.9rem;">
+                        <span>💵 Cash in Hand:</span>
+                        <strong style="color: ${availableCash >= 0 ? '#2a9d8f' : '#c1121f'};">₹${availableCash.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem;">
+                        <span>💳 Online / Bank:</span>
+                        <strong style="color: ${availableOnline >= 0 ? '#2a9d8f' : '#c1121f'};">₹${availableOnline.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-top: 2px solid #cbd5e1; padding-top: 6px; font-weight: bold;">
+                        <span>📊 Net Available Balance:</span>
+                        <strong style="color: ${totalAvailable >= 0 ? '#2a9d8f' : '#c1121f'}; font-size: 1.05rem;">₹${totalAvailable.toLocaleString('en-IN')}</strong>
+                    </div>
+                </div>
+            `;
         }
 
         // 3. Render Daily Cash Flow Table

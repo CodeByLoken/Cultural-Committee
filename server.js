@@ -69,10 +69,10 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
-// Analytics Route
+// Analytics Route (Updated with Available Balance Breakdown)
 app.get('/api/analytics', async (req, res) => {
     try {
-        const [dailyRes, buildingRes, paymentModeRes] = await Promise.all([
+        const [dailyRes, buildingRes, paymentModeRes, expenseModeRes] = await Promise.all([
             // 1. Date-Wise Daily Cash Flow
             pool.query(`
                 WITH daily_coll AS (
@@ -118,7 +118,7 @@ app.get('/api/analytics', async (req, res) => {
                 ORDER BY total_amount DESC
             `),
 
-            // 3. Payment Mode Split
+            // 3. Payment Mode Split (Collections)
             pool.query(`
                 SELECT 
                     payment_mode AS mode,
@@ -126,6 +126,15 @@ app.get('/api/analytics', async (req, res) => {
                     COALESCE(SUM(amount), 0) AS total_amount
                 FROM receipts
                 GROUP BY payment_mode
+            `),
+
+            // 4. Expense Mode Split
+            pool.query(`
+                SELECT 
+                    COALESCE(expense_type, 'online') AS mode,
+                    COALESCE(SUM(amount), 0) AS total_amount
+                FROM expenses
+                GROUP BY COALESCE(expense_type, 'online')
             `)
         ]);
 
@@ -133,7 +142,8 @@ app.get('/api/analytics', async (req, res) => {
             status: 'success',
             dailySummary: dailyRes.rows,
             buildingSummary: buildingRes.rows,
-            paymentModeSummary: paymentModeRes.rows
+            paymentModeSummary: paymentModeRes.rows,
+            expenseModeSummary: expenseModeRes.rows
         });
 
     } catch (error) {
@@ -237,18 +247,18 @@ app.post('/api/generate-receipt-image', async (req, res) => {
     }
 });
 
-// Expenses Routes
+// Expenses Routes (Updated with expense_type)
 app.post('/api/save-expense', async (req, res) => {
     try {
-        const { header, date, summary, vendor, amount, createdBy } = req.body;
+        const { header, date, summary, vendor, amount, expenseType, createdBy } = req.body;
         const insertQuery = `
-            INSERT INTO expenses (header, date, summary, vendor, amount, created_by)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO expenses (header, date, summary, vendor, amount, expense_type, created_by)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id;
         `;
-        await pool.query(insertQuery, [header, date, summary, vendor, amount, createdBy]);
+        await pool.query(insertQuery, [header, date, summary, vendor, amount, expenseType || 'online', createdBy]);
 
-        syncToGoogleSheetAsync({ action: 'saveExpense', header, date, summary, vendor, amount, createdBy });
+        syncToGoogleSheetAsync({ action: 'saveExpense', header, date, summary, vendor, amount, expenseType, createdBy });
 
         res.json({ status: 'success' });
     } catch (error) {
@@ -258,7 +268,7 @@ app.post('/api/save-expense', async (req, res) => {
 
 app.get('/api/get-expenses', async (req, res) => {
     try {
-        const result = await pool.query(`SELECT header, date, summary, vendor, amount, created_by AS "createdBy" FROM expenses ORDER BY id DESC`);
+        const result = await pool.query(`SELECT header, date, summary, vendor, amount, COALESCE(expense_type, 'online') AS "expenseType", created_by AS "createdBy" FROM expenses ORDER BY id DESC`);
         res.json({ expenses: result.rows });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
