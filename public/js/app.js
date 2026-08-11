@@ -821,6 +821,7 @@ function printCategoryTable(category) {
 
     printWin.document.close();
 }
+
 function printExpenseStatement() {
     window.print();
 }
@@ -988,14 +989,14 @@ async function fetchAnalyticsData() {
             `;
         }
 
-        // 3. Render Daily Cash Flow Table
+        // 3. Render Daily Cash Flow Table with Cumulative Running Balance
         if (data.dailySummary && data.dailySummary.length > 0) {
             let dHtml = '';
             data.dailySummary.forEach(row => {
                 const coll = Number(row.daily_collection);
                 const exp = Number(row.daily_expense);
-                const net = Number(row.net_balance);
-                const netClass = net >= 0 ? 'color: #2a9d8f; font-weight: bold;' : 'color: #c1121f; font-weight: bold;';
+                const cumBalance = Number(row.cumulative_balance !== undefined ? row.cumulative_balance : row.net_balance);
+                const netClass = cumBalance >= 0 ? 'color: #2a9d8f; font-weight: bold;' : 'color: #c1121f; font-weight: bold;';
 
                 dHtml += `
                     <tr>
@@ -1003,7 +1004,7 @@ async function fetchAnalyticsData() {
                         <td>${row.receipt_count}</td>
                         <td style="color: #2a9d8f; font-weight: bold;">+ ₹${coll.toLocaleString('en-IN')}</td>
                         <td style="color: #c1121f; font-weight: bold;">- ₹${exp.toLocaleString('en-IN')}</td>
-                        <td style="${netClass}">₹${net.toLocaleString('en-IN')}</td>
+                        <td style="${netClass}">₹${cumBalance.toLocaleString('en-IN')}</td>
                     </tr>
                 `;
             });

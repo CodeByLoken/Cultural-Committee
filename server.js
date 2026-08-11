@@ -70,31 +70,72 @@ app.get('/api/stats', async (req, res) => {
 });
 
 // Analytics Route (Updated with Available Balance Breakdown)
+// Analytics Route (with Cumulative Running Balance)
 app.get('/api/analytics', async (req, res) => {
     try {
         const [dailyRes, buildingRes, paymentModeRes, expenseModeRes] = await Promise.all([
-            // 1. Date-Wise Daily Cash Flow
+            // 1. Date-Wise Daily Cash Flow with Running Cumulative Balance
             pool.query(`
-                WITH daily_coll AS (
-                    SELECT date, SUM(amount) AS total_collected, COUNT(receipt_no) AS receipt_count 
-                    FROM receipts GROUP BY date
+                WITH parsed_receipts AS (
+                    SELECT 
+                        CASE 
+                            WHEN date ~ '^[0-9]{2}/[0-9]{2}/[0-9]{4}$' THEN TO_DATE(date, 'DD/MM/YYYY')
+                            WHEN date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(date, 'YYYY-MM-DD')
+                            ELSE NULL
+                        END AS parsed_date,
+                        amount,
+                        receipt_no
+                    FROM receipts
+                ),
+                parsed_expenses AS (
+                    SELECT 
+                        CASE 
+                            WHEN date ~ '^[0-9]{2}/[0-9]{2}/[0-9]{4}$' THEN TO_DATE(date, 'DD/MM/YYYY')
+                            WHEN date ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN TO_DATE(date, 'YYYY-MM-DD')
+                            ELSE NULL
+                        END AS parsed_date,
+                        amount
+                    FROM expenses
+                ),
+                daily_coll AS (
+                    SELECT 
+                        parsed_date, 
+                        SUM(amount) AS total_collected, 
+                        COUNT(receipt_no) AS receipt_count 
+                    FROM parsed_receipts 
+                    WHERE parsed_date IS NOT NULL 
+                    GROUP BY parsed_date
                 ),
                 daily_exp AS (
-                    SELECT date, SUM(amount) AS total_spent 
-                    FROM expenses GROUP BY date
+                    SELECT 
+                        parsed_date, 
+                        SUM(amount) AS total_spent 
+                    FROM parsed_expenses 
+                    WHERE parsed_date IS NOT NULL 
+                    GROUP BY parsed_date
+                ),
+                combined_daily AS (
+                    SELECT 
+                        COALESCE(c.parsed_date, e.parsed_date) AS parsed_date,
+                        COALESCE(c.total_collected, 0) AS daily_collection,
+                        COALESCE(c.receipt_count, 0) AS receipt_count,
+                        COALESCE(e.total_spent, 0) AS daily_expense,
+                        (COALESCE(c.total_collected, 0) - COALESCE(e.total_spent, 0)) AS net_daily
+                    FROM daily_coll c
+                    FULL OUTER JOIN daily_exp e ON c.parsed_date = e.parsed_date
                 )
                 SELECT 
-                    COALESCE(c.date, e.date) AS date,
-                    COALESCE(c.total_collected, 0) AS daily_collection,
-                    COALESCE(c.receipt_count, 0) AS receipt_count,
-                    COALESCE(e.total_spent, 0) AS daily_expense,
-                    (COALESCE(c.total_collected, 0) - COALESCE(e.total_spent, 0)) AS net_balance
-                FROM daily_coll c
-                FULL OUTER JOIN daily_exp e ON c.date = e.date
-                ORDER BY date DESC
+                    TO_CHAR(parsed_date, 'DD/MM/YYYY') AS date,
+                    receipt_count,
+                    daily_collection,
+                    daily_expense,
+                    net_daily,
+                    SUM(net_daily) OVER (ORDER BY parsed_date ASC) AS cumulative_balance
+                FROM combined_daily
+                ORDER BY parsed_date DESC
             `),
 
-            // 2. Building / Tower-Wise Breakdown with Unique Contributed Flats
+            // 2. Building / Tower-Wise Breakdown
             pool.query(`
                 WITH b_counts AS (
                     SELECT 
