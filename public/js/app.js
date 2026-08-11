@@ -993,9 +993,11 @@ async function fetchAnalyticsData() {
         if (data.dailySummary && data.dailySummary.length > 0) {
             let dHtml = '';
             data.dailySummary.forEach(row => {
-                const coll = Number(row.daily_collection);
-                const exp = Number(row.daily_expense);
-                const cumBalance = Number(row.cumulative_balance !== undefined ? row.cumulative_balance : row.net_balance);
+                const coll = Number(row.daily_collection || 0);
+                const exp = Number(row.daily_expense || 0);
+
+                // Read cumulative_balance directly from server response, with robust fallback
+                const cumBalance = Number(row.cumulative_balance !== undefined ? row.cumulative_balance : (row.net_daily !== undefined ? row.net_daily : row.net_balance));
                 const netClass = cumBalance >= 0 ? 'color: #2a9d8f; font-weight: bold;' : 'color: #c1121f; font-weight: bold;';
 
                 dHtml += `
