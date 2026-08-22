@@ -147,6 +147,7 @@ app.get('/api/analytics', async (req, res) => {
                             WHEN LOWER(flat) LIKE 'd2-%' THEN 'Building D2'
                             WHEN LOWER(flat) LIKE 'e-%' THEN 'Building E'
                             WHEN LOWER(flat) LIKE 'f1-%' THEN 'Building F1'
+                            WHEN LOWER(flat) LIKE 'maha%' THEN 'Mahaprasad Annadan'
                             WHEN Lower(flat) LIKE 'vendor-' THEN 'Vendors'
                             ELSE 'Other'
                         END AS building,
