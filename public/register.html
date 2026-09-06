@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Purvanchal Ganeshotsav 2026 - Event Registration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-red: #c1121f;
+            --primary-gold: #ffb703;
+            --dark-blue: #003049;
+            --bg-cream: #fffdf5;
+            --border-color: #e2e8f0;
+            --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #fdfbf7;
+            color: #2b2d42;
+            padding: 20px 12px;
+        }
+
+        .container {
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
+        .header-card {
+            background: linear-gradient(135deg, #780000, #c1121f);
+            color: white;
+            text-align: center;
+            padding: 24px 16px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+            .header-card .mantra {
+                color: var(--primary-gold);
+                font-weight: 600;
+                font-size: 0.95rem;
+                margin-bottom: 4px;
+            }
+
+            .header-card h1 {
+                font-size: 1.45rem;
+                font-weight: 700;
+            }
+
+            .header-card p {
+                font-size: 0.85rem;
+                opacity: 0.9;
+                margin-top: 4px;
+            }
+
+        .form-card {
+            background: white;
+            padding: 24px 20px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #f1f5f9;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+            .form-row .form-group {
+                flex: 1;
+            }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--dark-blue);
+        }
+
+        .required {
+            color: var(--primary-red);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.92rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+            input:focus, select:focus, textarea:focus {
+                border-color: var(--primary-red);
+                box-shadow: 0 0 0 3px rgba(193, 18, 31, 0.12);
+            }
+
+        .events-box {
+            background: #fafafa;
+            border: 1.5px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 18px;
+        }
+
+        .events-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            background: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+            .event-item:hover {
+                border-color: var(--primary-gold);
+            }
+
+            .event-item input {
+                width: 18px;
+                height: 18px;
+                margin-right: 12px;
+                accent-color: var(--primary-red);
+            }
+
+            .event-item span {
+                font-size: 0.9rem;
+                font-weight: 500;
+            }
+
+        .category-tag {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-left: auto;
+        }
+
+        .upload-box {
+            background: #fff8eb;
+            border: 1.5px dashed #f59e0b;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 18px;
+            display: none;
+        }
+
+            .upload-box label {
+                color: #b45309;
+            }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, #c1121f, #780000);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(193, 18, 31, 0.35);
+            transition: opacity 0.2s ease;
+        }
+
+            .btn-submit:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+        .alert-box {
+            display: none;
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 16px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .alert-success {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-card">
+            <div class="mantra">॥ श्री गणेशाय नमः ॥</div>
+            <h1>Purvanchal Ganeshotsav 2026</h1>
+            <p>Cultural Events & Competitions Registration Portal</p>
+        </div>
+
+        <div class="form-card">
+            <form id="regForm" onsubmit="handleRegistration(event)">
+
+                <!-- Tower & Flat -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Building / Tower <span class="required">*</span></label>
+                        <select id="building" required>
+                            <option value="" disabled selected>Select Building</option>
+                            <option value="A">Building A</option>
+                            <option value="B">Building B</option>
+                            <option value="C">Building C</option>
+                            <option value="D1">Building D1</option>
+                            <option value="D2">Building D2</option>
+                            <option value="E">Building E</option>
+                            <option value="F1">Building F1</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Flat Number <span class="required">*</span></label>
+                        <input type="text" id="flat" placeholder="e.g. 608" required />
+                    </div>
+                </div>
+
+                <!-- Participant Name & WhatsApp -->
+                <div class="form-group">
+                    <label>Participant Full Name <span class="required">*</span></label>
+                    <input type="text" id="participantName" placeholder="e.g. Aarav Sharma" required />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Age (Years) <span class="required">*</span></label>
+                        <input type="number" id="age" min="3" max="99" placeholder="e.g. 10" required oninput="filterEventsByAge()" />
+                    </div>
+
+                    <div class="form-group">
+                        <label>WhatsApp Number <span class="required">*</span></label>
+                        <input type="tel" id="whatsapp" maxlength="10" placeholder="10-digit number" required />
+                    </div>
+                </div>
+
+                <!-- Dynamic Event Checklist Based on Age -->
+                <div class="events-box">
+                    <label>Eligible Competitions & Events <span class="required">*</span></label>
+                    <p style="font-size: 0.78rem; color: #64748b;">(Events update dynamically as you enter the participant's age)</p>
+                    <div class="events-grid" id="eventsContainer">
+                        <p style="font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 10px;">Please enter participant's age above to view eligible events.</p>
+                    </div>
+                </div>
+
+                <!-- Audio Track Upload (Triggered if Dance is selected) -->
+                <div class="upload-box" id="danceAudioBox">
+                    <label>🎵 Upload Performance Music Track (MP3/WAV)</label>
+                    <p style="font-size: 0.78rem; color: #92400e; margin-bottom: 8px;">Upload your dance track (Max size: 8MB).</p>
+                    <input type="file" id="audioFile" accept="audio/*" />
+                </div>
+
+                <!-- Additional Notes -->
+                <div class="form-group">
+                    <label>Special Instructions or Group Details (Optional)</label>
+                    <textarea id="notes" rows="2" placeholder="Mention group member names or specific requirements..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submitBtn">Submit Event Registration</button>
+                <div id="statusAlert" class="alert-box"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+  // Event Rules & Age Groups
+  const EVENTS_MASTER = [
+    { id: 'drawing_kids', name: '🎨 Drawing & Coloring', minAge: 3, maxAge: 8, category: 'Kids (3-8 yrs)' },
+    { id: 'drawing_juniors', name: '🎨 Drawing & Sketching', minAge: 9, maxAge: 15, category: 'Juniors (9-15 yrs)' },
+    { id: 'shloka', name: '🕉️ Sanskrit Shloka Chanting', minAge: 4, maxAge: 14, category: 'Juniors (4-14 yrs)' },
+    { id: 'fancy_dress', name: '🎭 Fancy Dress Competition', minAge: 3, maxAge: 10, category: 'Kids (3-10 yrs)' },
+    { id: 'dance_solo_kids', name: '💃 Solo Dance (Kids)', minAge: 4, maxAge: 10, isDance: true, category: 'Kids' },
+    { id: 'dance_solo_juniors', name: '💃 Solo Dance (Juniors)', minAge: 11, maxAge: 17, isDance: true, category: 'Juniors' },
+    { id: 'dance_group', name: '🕺 Group Dance Performance', minAge: 5, maxAge: 99, isDance: true, category: 'Open Group' },
+    { id: 'singing_solo', name: '🎤 Solo Singing Contest', minAge: 8, maxAge: 99, category: 'Open Age' },
+    { id: 'modak_making', name: '🥟 Modak Making & Decoration', minAge: 16, maxAge: 99, category: 'Adults (16+ yrs)' },
+    { id: 'rangoli', name: '🌸 Traditional Rangoli Contest', minAge: 12, maxAge: 99, category: 'Open (12+ yrs)' }
+  ];
+
+  function filterEventsByAge() {
+    const ageVal = parseInt(document.getElementById('age').value, 10);
+    const container = document.getElementById('eventsContainer');
+
+    if (isNaN(ageVal) || ageVal <= 0) {
+      container.innerHTML = `<p style="font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 10px;">Please enter participant's age above to view eligible events.</p>`;
+      document.getElementById('danceAudioBox').style.display = 'none';
+      return;
+    }
+
+    const eligible = EVENTS_MASTER.filter(e => ageVal >= e.minAge && ageVal <= e.maxAge);
+
+    if (eligible.length === 0) {
+      container.innerHTML = `<p style="font-size: 0.85rem; color: #ef4444; text-align: center; padding: 10px;">No specific events found for age ${ageVal}.</p>`;
+      return;
+    }
+
+    let html = '';
+    eligible.forEach(ev => {
+      html += `
+        <label class="event-item">
+          <input type="checkbox" name="selected_events" value="${ev.name}" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload()" />
+          <span>${ev.name}</span>
+          <span class="category-tag">${ev.category}</span>
+        </label>
+      `;
+    });
+
+    container.innerHTML = html;
+    toggleAudioUpload();
+  }
+
+  function toggleAudioUpload() {
+    const checked = Array.from(document.querySelectorAll('input[name="selected_events"]:checked'));
+    const isDanceSelected = checked.some(input => input.dataset.isDance === 'true');
+    document.getElementById('danceAudioBox').style.display = isDanceSelected ? 'block' : 'none';
+  }
+
+  async function handleRegistration(e) {
+    e.preventDefault();
+
+    const checkedBoxes = Array.from(document.querySelectorAll('input[name="selected_events"]:checked'));
+    if (checkedBoxes.length === 0) {
+      alert("Please select at least one event/competition.");
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    const alertBox = document.getElementById('statusAlert');
+    btn.disabled = true;
+    btn.innerText = "Processing Registration...";
+    alertBox.style.display = 'none';
+
+    const building = document.getElementById('building').value;
+    const flat = document.getElementById('flat').value.trim();
+    const participantName = document.getElementById('participantName').value.trim();
+    const age = document.getElementById('age').value;
+    const whatsapp = document.getElementById('whatsapp').value.trim();
+    const notes = document.getElementById('notes').value.trim();
+    const events = checkedBoxes.map(b => b.value);
+
+    let audioBase64 = null;
+    let audioFileName = null;
+
+    const fileInput = document.getElementById('audioFile');
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      audioFileName = file.name;
+      audioBase64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
+      });
+    }
+
+    try {
+      const res = await fetch('/api/register-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          building, flat, participantName, age, whatsapp, events, audioBase64, audioFileName, notes
+        })
+      });
+
+      const data = await res.json();
+      if (data.status === 'success') {
+        alertBox.className = 'alert-box alert-success';
+        alertBox.innerHTML = `🎉 <strong>Registration Successful!</strong><br>Registration ID: <strong>#REG-${data.registrationId}</strong>.<br>The cultural committee will reach out on WhatsApp with program slots.`;
+        alertBox.style.display = 'block';
+        document.getElementById('regForm').reset();
+        document.getElementById('danceAudioBox').style.display = 'none';
+        document.getElementById('eventsContainer').innerHTML = `<p style="font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 10px;">Please enter participant's age above to view eligible events.</p>`;
+      } else {
+        throw new Error(data.message || "Failed to submit.");
+      }
+    } catch (err) {
+      alertBox.className = 'alert-box alert-error';
+      alertBox.innerText = `Error: ${err.message}`;
+      alertBox.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerText = "Submit Event Registration";
+    }
+  }
+    </script>
+</body>
+</html>

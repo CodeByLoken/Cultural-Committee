@@ -332,3 +332,56 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 require('./services/telegramBot');
+
+// 1. Serve Public Registration Page (No Login Required)
+app.get('/register', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'register.html'));
+});
+
+// 2. Public Event Registration Endpoint
+app.post('/api/register-event', async (req, res) => {
+    try {
+        const { building, flat, participantName, age, whatsapp, events, audioBase64, audioFileName, notes } = req.body;
+
+        if (!building || !flat || !participantName || !age || !whatsapp || !events || events.length === 0) {
+            return res.status(400).json({ status: 'error', message: 'All mandatory fields are required.' });
+        }
+
+        let audioFileUrl = null;
+
+        // If audio file is provided (e.g. for dance), upload to Google Drive via Apps Script
+        if (audioBase64) {
+            try {
+                const driveRes = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'saveAudio',
+                        participantName,
+                        flat: `${building}-${flat}`,
+                        fileName: audioFileName || 'dance_track.mp3',
+                        fileBase64: audioBase64.replace(/^data:audio\/\w+;base64,/, '')
+                    }),
+                    redirect: 'follow'
+                });
+                const driveData = await driveRes.json();
+                audioFileUrl = driveData.fileUrl || null;
+            } catch (uploadErr) {
+                console.error("Failed to upload audio to Drive:", uploadErr.message);
+            }
+        }
+
+        const query = `
+            INSERT INTO event_registrations (building, flat, participant_name, age, whatsapp, events, audio_file_url, notes)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING id;
+        `;
+        const values = [building, flat, participantName, parseInt(age, 10), whatsapp, events, audioFileUrl, notes || ''];
+        const dbRes = await pool.query(query, values);
+
+        res.json({ status: 'success', registrationId: dbRes.rows[0].id });
+    } catch (err) {
+        console.error("Event Registration Error:", err.message);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
