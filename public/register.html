@@ -231,6 +231,19 @@
                 color: #b45309;
             }
 
+        /* Gentle Notice Banner */
+        .info-note {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.79rem;
+            text-align: center;
+            margin-bottom: 18px;
+            line-height: 1.4;
+        }
+
         .btn-submit {
             width: 100%;
             background: linear-gradient(135deg, #c1121f, #780000);
@@ -278,7 +291,7 @@
         <div class="header-card">
             <div class="mantra">॥ श्री गणेशाय नमः ॥</div>
             <h1>Purvanchal Ganeshotsav 2026</h1>
-            <p>Cultural Events Registration Portal</p>
+            <p>Cultural Events & Competitions Registration Portal</p>
         </div>
 
         <div class="form-card">
@@ -352,6 +365,11 @@
                     <textarea id="notes" rows="2" placeholder="Mention group members or partner names if registering for group dance..."></textarea>
                 </div>
 
+                <!-- Gentle Note before Submit -->
+                <div class="info-note">
+                    🌸 <em>Note: All these events are organized purely for community engagement and joyful celebration, rather than formal competition. Let's come together and enjoy!</em>
+                </div>
+
                 <button type="submit" class="btn-submit" id="submitBtn">Submit Event Registration</button>
                 <div id="statusAlert" class="alert-box"></div>
             </form>
@@ -378,7 +396,7 @@
             { id: 'foodstall', name: 'Food Stall / Anand Mela', date: '20th Sep (Sunday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
             { id: 'musicalchair', name: 'Musical Chair', date: '21st Sep (Monday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
             { id: 'hit_wicket', name: 'Hit Wicket', date: '22nd Sep (Tuesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', subText: '✨ Showcase your best talent — sing, play an instrument, do magic, or anything unique!', date: '23rd Sep (Wednesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
+            { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', subText: '✨ Showcase your best talent — sing, dance, play an instrument, do magic, or anything unique!', date: '23rd Sep (Wednesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
         ];
 
         // Real-time Flat Number Validation (Numbers only, max 4 digits)
