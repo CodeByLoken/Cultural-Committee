@@ -405,7 +405,7 @@ app.get('/api/annadan/items', async (req, res) => {
 app.get('/api/annadan/admin/items', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT id, item_name, category, total_needed, total_pledged, (total_needed - total_pledged) AS remaining_qty, unit, notes 
+            SELECT id, item_name, total_needed, total_pledged, (total_needed - total_pledged) AS remaining_qty, unit, notes 
             FROM annadan_items 
             ORDER BY id ASC;
         `);
