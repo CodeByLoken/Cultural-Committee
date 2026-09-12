@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Annadan Admin - Purvanchal Ganeshotsav 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --primary-red: #c1121f;
+            --primary-gold: #ffb703;
+            --dark-blue: #003049;
+            --bg-cream: #fffdf5;
+            --border-color: #cbd5e1;
+            --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: #fdfbf7;
+            color: #2b2d42;
+            padding: 16px 10px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+
+        .header-card {
+            background: linear-gradient(135deg, #780000, #c1121f);
+            color: white;
+            text-align: center;
+            padding: 22px 16px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+            .header-card h1 {
+                font-size: 1.35rem;
+                font-weight: 700;
+            }
+
+            .header-card p {
+                font-size: 0.82rem;
+                opacity: 0.9;
+                margin-top: 4px;
+            }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #f1f5f9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            text-align: left;
+            font-size: 0.83rem;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--dark-blue);
+            font-weight: 600;
+        }
+
+        input.qty-input {
+            width: 65px;
+            padding: 6px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+
+        input.note-input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            outline: none;
+        }
+
+            input.note-input:focus {
+                border-color: var(--primary-red);
+            }
+
+        .btn-save {
+            background: #059669;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+            .btn-save:hover {
+                background: #047857;
+            }
+
+        .status-msg {
+            font-size: 0.8rem;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-card">
+            <h1>⚙️ Annadan Inventory Management</h1>
+            <p>Update quantities and add special notes or item instructions</p>
+        </div>
+
+        <div class="card">
+            <h3 style="color: var(--dark-blue); margin-bottom: 12px;">Active Food Items & Instructions</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 22%;">Item Name</th>
+                            <th style="width: 10%;">Needed</th>
+                            <th style="width: 10%;">Pledged</th>
+                            <th style="width: 10%;">Rem.</th>
+                            <th style="width: 35%;">Special Notes / Instructions</th>
+                            <th style="width: 13%;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminTableBody">
+                        <tr><td colspan="6" style="text-align: center; color: #94a3b8;">Loading inventory...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="statusMsg" class="status-msg"></div>
+        </div>
+    </div>
+
+    <script>
+        async function loadAdminAnnadan() {
+            try {
+                const res = await fetch('/api/annadan/admin/items');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    let html = '';
+                    data.items.forEach(item => {
+                        html += `
+                                <tr>
+                                    <td><strong>${item.item_name}</strong><br><small style="color:#64748b;">(${item.unit})</small></td>
+                                    <td><input type="number" id="needed_${item.id}" class="qty-input" value="${item.total_needed}" /></td>
+                                    <td><input type="number" id="pledged_${item.id}" class="qty-input" value="${item.total_pledged}" /></td>
+                                    <td><strong>${item.remaining_qty}</strong></td>
+                                    <td><input type="text" id="note_${item.id}" class="note-input" value="${item.notes || ''}" placeholder="e.g. Only loose grain brand..." /></td>
+                                    <td><button class="btn-save" onclick="updateItem(${item.id})">Save</button></td>
+                                </tr>
+                            `;
+                    });
+                    document.getElementById('adminTableBody').innerHTML = html;
+                }
+            } catch (err) {
+                document.getElementById('adminTableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#c1121f;">Failed to load items.</td></tr>`;
+            }
+        }
+
+        async function updateItem(id) {
+            const totalNeeded = parseInt(document.getElementById(`needed_${id}`).value, 10);
+            const totalPledged = parseInt(document.getElementById(`pledged_${id}`).value, 10);
+            const notes = document.getElementById(`note_${id}`).value.trim();
+            const msgBox = document.getElementById('statusMsg');
+
+            try {
+                const res = await fetch('/api/annadan/admin/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ itemId: id, totalNeeded, totalPledged, notes })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    msgBox.style.color = '#059669';
+                    msgBox.innerText = '✓ Item updated successfully!';
+                    loadAdminAnnadan();
+                    setTimeout(() => { msgBox.innerText = ''; }, 3000);
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (err) {
+                msgBox.style.color = '#c1121f';
+                msgBox.innerText = `Error: ${err.message}`;
+            }
+        }
+
+        window.onload = loadAdminAnnadan;
+    </script>
+</body>
+</html>

@@ -385,3 +385,62 @@ app.post('/api/register-event', async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
+// 1. Get Public Annadan List (Includes notes and excludes items where remaining <= 0)
+app.get('/api/annadan/items', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT id, item_name, category, (total_needed - total_pledged) AS remaining_qty, unit, notes 
+            FROM annadan_items 
+            WHERE (total_needed - total_pledged) > 0 
+            ORDER BY category, item_name ASC;
+        `);
+        res.json({ status: 'success', items: result.rows });
+    } catch (err) {
+        console.error("Error fetching Annadan list:", err.message);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+// 2. Get All Annadan Items for Admin Management (Includes notes)
+app.get('/api/annadan/admin/items', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT id, item_name, category, total_needed, total_pledged, (total_needed - total_pledged) AS remaining_qty, unit, notes 
+            FROM annadan_items 
+            ORDER BY id ASC;
+        `);
+        res.json({ status: 'success', items: result.rows });
+    } catch (err) {
+        console.error("Error fetching admin Annadan list:", err.message);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+// 3. Update Annadan Quantities & Notes (Admin Action)
+app.post('/api/annadan/admin/update', async (req, res) => {
+    try {
+        const { itemId, totalNeeded, totalPledged, notes } = req.body;
+
+        await pool.query(`
+            UPDATE annadan_items 
+            SET total_needed = COALESCE($1, total_needed), 
+                total_pledged = COALESCE($2, total_pledged),
+                notes = $3
+            WHERE id = $4;
+        `, [totalNeeded, totalPledged, notes || '', itemId]);
+
+        res.json({ status: 'success', message: 'Annadan item updated successfully.' });
+    } catch (err) {
+        console.error("Error updating Annadan item:", err.message);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
+
+// Static UI Routes
+app.get('/annadan', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'annadan.html'));
+});
+
+app.get('/annadan-admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'annadan-admin.html'));
+});
