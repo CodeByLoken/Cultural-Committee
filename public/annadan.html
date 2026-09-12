@@ -10,7 +10,6 @@
             --primary-red: #c1121f;
             --primary-gold: #ffb703;
             --dark-blue: #003049;
-            --bg-cream: #fffdf5;
             --border-color: #cbd5e1;
             --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
         }
@@ -46,8 +45,18 @@
             .header-card .mantra {
                 color: var(--primary-gold);
                 font-weight: 600;
-                font-size: 0.95rem;
+                font-size: 0.92rem;
+                margin-bottom: 6px;
+                letter-spacing: 0.5px;
+            }
+
+            .header-card .subtitle-event {
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--primary-gold);
                 margin-bottom: 4px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
             }
 
             .header-card h1 {
@@ -106,12 +115,14 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.02);
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
         }
 
         .item-info {
             display: flex;
             flex-direction: column;
+            flex: 1;
+            padding-right: 12px;
         }
 
         .item-name {
@@ -120,19 +131,17 @@
             color: var(--dark-blue);
         }
 
-        .item-category {
-            font-size: 0.72rem;
-            background: #e0f2fe;
-            color: #0369a1;
-            padding: 2px 8px;
-            border-radius: 6px;
-            width: fit-content;
+        .item-notes {
+            font-size: 0.78rem;
+            color: #d97706;
+            font-style: italic;
             margin-top: 4px;
-            font-weight: 500;
+            line-height: 1.3;
         }
 
         .item-qty {
             text-align: right;
+            flex-shrink: 0;
         }
 
         .qty-val {
@@ -176,9 +185,10 @@
 
     <div class="container">
         <div class="header-card">
-            <div class="mantra">॥ अन्नदाता सुखिनः भवन्तु ॥</div>
+            <div class="mantra">॥ श्री गणेशाय नमः ॥ &nbsp; | &nbsp; ॥ अन्नदाता सुखिनः भवन्तु ॥</div>
+            <div class="subtitle-event">Purvanchal Ganeshotsav 2026</div>
             <h1>Annadan Seva Requirements</h1>
-            <p>Contribute towards Mahaprasad & Community Meals</p>
+            <p>Contribute towards Mahaprasad</p>
         </div>
 
         <div class="search-box">
@@ -197,53 +207,54 @@
     </div>
 
     <script>
-    let allItems = [];
+        let allItems = [];
 
-    async function fetchAnnadanItems() {
-        try {
-            const res = await fetch('/api/annadan/items');
-            const data = await res.json();
-            if (data.status === 'success') {
-                allItems = data.items || [];
-                renderItems(allItems);
+        async function fetchAnnadanItems() {
+            try {
+                const res = await fetch('/api/annadan/items');
+                const data = await res.json();
+                if (data.status === 'success') {
+                    allItems = data.items || [];
+                    renderItems(allItems);
+                }
+            } catch (err) {
+                document.getElementById('annadanContainer').innerHTML = `<p class="empty-state" style="color: #c1121f;">Failed to load requirements.</p>`;
             }
-        } catch (err) {
-            document.getElementById('annadanContainer').innerHTML = `<p class="empty-state" style="color: #c1121f;">Failed to load requirements.</p>`;
-        }
-    }
-
-    function renderItems(list) {
-        const container = document.getElementById('annadanContainer');
-        if (list.length === 0) {
-            container.innerHTML = `<p class="empty-state">🎉 All Annadan items have been fully fulfilled! Thank you to all donors.</p>`;
-            return;
         }
 
-        let html = '';
-        list.forEach(item => {
-            html += `
-                <div class="item-card">
-                    <div class="item-info">
-                        <span class="item-name">${item.item_name}</span>
-                        <span class="item-category">${item.category}</span>
-                    </div>
-                    <div class="item-qty">
-                        <div class="qty-val">${item.remaining_qty} ${item.unit}</div>
-                        <div class="qty-label">Still Needed</div>
-                    </div>
-                </div>
-            `;
-        });
-        container.innerHTML = html;
-    }
+        function renderItems(list) {
+            const container = document.getElementById('annadanContainer');
+            if (list.length === 0) {
+                container.innerHTML = `<p class="empty-state">🎉 All Annadan items have been fully fulfilled! Thank you to all donors.</p>`;
+                return;
+            }
 
-    function filterItems() {
-        const query = document.getElementById('searchInput').value.toLowerCase().trim();
-        const filtered = allItems.filter(i => i.item_name.toLowerCase().includes(query) || i.category.toLowerCase().includes(query));
-        renderItems(filtered);
-    }
+            let html = '';
+            list.forEach(item => {
+                let notesHtml = item.notes ? `<div class="item-notes">📝 Note: ${item.notes}</div>` : '';
+                html += `
+                    <div class="item-card">
+                        <div class="item-info">
+                            <span class="item-name">${item.item_name}</span>
+                            ${notesHtml}
+                        </div>
+                        <div class="item-qty">
+                            <div class="qty-val">${item.remaining_qty} ${item.unit}</div>
+                            <div class="qty-label">Still Needed</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
 
-    window.onload = fetchAnnadanItems;
+        function filterItems() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const filtered = allItems.filter(i => i.item_name.toLowerCase().includes(query));
+            renderItems(filtered);
+        }
+
+        window.onload = fetchAnnadanItems;
     </script>
 </body>
 </html>
