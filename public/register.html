@@ -311,24 +311,25 @@
     <script>
         // Complete Master Schedule Mapped directly from your festival event list
         const EVENTS_MASTER = [
-            { id: 'straw_game', name: 'Straw Building Game', date: '15th Sep (Tue)', time: '7:30 PM', minAge: 0, maxAge: 9, category: 'Age: 0-9' },
-            { id: 'sudoku', name: 'Sudoku Game', date: '15th Sep (Tue)', time: '8:30 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16' },
-            { id: 'rangoli_game', name: 'Rangoli Game', date: '15th Sep (Tue)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
-            { id: 'puzzle', name: 'Puzzle game', date: '16th Sep (Wed)', time: '8:00 PM', minAge: 0, maxAge: 10, category: 'Age: 0-10' },
-            { id: 'balloon_burst_1', name: 'Balloon Burst Game', date: '16th Sep (Wed)', time: '8:00 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16' },
-            { id: 'balloon_burst_2', name: 'Balloon Burst Game', date: '17th Sep (Thu)', time: '7:30 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
-            { id: 'needle_thread', name: 'Needle Thread game', date: '17th Sep (Thu)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
-            { id: 'dance_solo_kids', name: 'Dance (Solo)', date: '18th Sep (Fri)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
-            { id: 'dance_group_kids', name: 'Group Dance', date: '18th Sep (Fri)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
-            { id: 'marathon', name: 'Marathon', date: '19th Sep (Sat)', time: '7:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'drawing', name: 'Drawing Competition', date: '19th Sep (Sat)', time: '11:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'chess', name: 'Chess Competition', date: '19th Sep (Sat)', time: '2:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'tug_of_war', name: 'Tug of War', date: '19th Sep (Sat)', time: '5:00 PM', minAge: 10, maxAge: 99, category: 'Age 10+' },
-            { id: 'dance_solo_adults', name: 'Dance (Solo)', date: '19th Sep (Sat)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years' },
-            { id: 'dance_group_adults', name: 'Group Dance', date: '19th Sep (Sat)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years' },
-            { id: 'foodstall', name: 'Food Stall / Anand Mela', date: '19th Sep (Sat)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'hit_wicket', name: 'Hit Wicket', date: '22nd Sep (Tue)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', date: '23rd Sep (Wed)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
+            { id: 'straw_game', name: 'Straw Building Game', date: '15th Sep (Tuesday)', time: '7:30 PM', minAge: 0, maxAge: 9, category: 'Age: 0-9' },
+            { id: 'sudoku', name: 'Sudoku Game', date: '15th Sep (Tuesday)', time: '8:30 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16' },
+            { id: 'rangoli_game', name: 'Rangoli Game', date: '15th Sep (Tuesday)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
+            { id: 'puzzle', name: 'Puzzle game', date: '16th Sep (Wednesday)', time: '8:00 PM', minAge: 0, maxAge: 10, category: 'Age: 0-10' },
+            { id: 'balloon_burst_1', name: 'Balloon Burst Game', date: '16th Sep (Wednesday)', time: '8:00 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16' },
+            { id: 'balloon_burst_2', name: 'Balloon Burst Game', date: '17th Sep (Thursday)', time: '7:30 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
+            { id: 'needle_thread', name: 'Needle Thread game', date: '17th Sep (Thursday)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
+            { id: 'dance_solo_kids', name: 'Dance (Solo)', date: '18th Sep (Friday)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
+            { id: 'dance_group_kids', name: 'Group Dance', date: '18th Sep (Friday)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
+            { id: 'marathon', name: 'Marathon', date: '19th Sep (Saturday)', time: '7:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'drawing', name: 'Drawing Competition', date: '19th Sep (Saturday), time: '11:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'chess', name: 'Chess Competition', date: '19th Sep (Saturday)', time: '2:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'tug_of_war', name: 'Tug of War', date: '19th Sep (Saturday)', time: '5:00 PM', minAge: 10, maxAge: 99, category: 'Age 10+' },
+            { id: 'dance_solo_adults', name: 'Dance (Solo)', date: '19th Sep (Saturday)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years' },
+            { id: 'dance_group_adults', name: 'Group Dance', date: '19th Sep (Saturday)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years' },
+            { id: 'foodstall', name: 'Food Stall / Anand Mela', date: '20th Sep (Sunday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'musicalchair', name: 'Musical Chair', date: '21st Sep (Monday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'hit_wicket', name: 'Hit Wicket', date: '22nd Sep (Tuesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', date: '23rd Sep (Wedneday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
         ];
 
         function filterEventsByAge() {
