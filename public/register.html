@@ -436,6 +436,7 @@
             const hint = document.getElementById('flatHint');
             if (val.length > 0 && val.length <= 4) {
                 hint.className = 'input-hint success';
+                hint.innerText = '✓ Valid flat number';
             } else {
                 hint.className = 'input-hint error';
                 hint.innerText = 'Numbers only (max 4 digits)';
@@ -488,16 +489,16 @@
             eligible.forEach(ev => {
                 let subtextHtml = ev.subText ? `<span class="event-subtext">${ev.subText}</span>` : '';
                 html += `
-                    <label class="event-item">
-                      <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload(); checkFormValidity();" />
-                      <div class="event-info">
-                        <span class="event-name">${ev.name}</span>
-                        ${subtextHtml}
-                        <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
-                      </div>
-                      <span class="category-tag">${ev.category}</span>
-                    </label>
-                  `;
+                        <label class="event-item">
+                          <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload(); checkFormValidity();" />
+                          <div class="event-info">
+                            <span class="event-name">${ev.name}</span>
+                            ${subtextHtml}
+                            <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
+                          </div>
+                          <span class="category-tag">${ev.category}</span>
+                        </label>
+                      `;
             });
 
             container.innerHTML = html;
@@ -581,7 +582,6 @@
                     document.getElementById('eventsContainer').innerHTML = `<p style="font-size: 0.83rem; color: #94a3b8; text-align: center; padding: 15px;">Please enter participant's age above to view eligible events.</p>`;
                     document.getElementById('flatHint').innerText = '';
                     document.getElementById('whatsappHint').innerText = '';
-                    checkFormValidity();
                 } else {
                     throw new Error(data.message || "Failed to submit registration.");
                 }
@@ -589,6 +589,9 @@
                 alertBox.className = 'alert-box alert-error';
                 alertBox.innerText = `Error: ${err.message}`;
                 alertBox.style.display = 'block';
+            } finally {
+                // Ensure button text and state are properly reset
+                btn.innerText = "Submit Event Registration";
                 checkFormValidity();
             }
         }
