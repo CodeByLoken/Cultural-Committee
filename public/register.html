@@ -123,11 +123,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
 
             .events-header-hint span {
-                font-size: 0.75rem;
+                font-size: 0.73rem;
                 color: #0369a1;
                 background: #e0f2fe;
                 padding: 2px 8px;
@@ -135,33 +135,13 @@
                 font-weight: 500;
             }
 
-        /* Mobile Scroll Optimization */
+        /* Redesigned Grid: Expanded naturally with no hidden inner scrollbars */
         .events-grid {
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-height: 280px;
-            overflow-y: auto;
-            padding-right: 4px;
-            /* Force scrollbar to render clearly on mobile web views */
-            scrollbar-width: thin;
-            scrollbar-color: var(--primary-red) #e2e8f0;
+            margin-top: 10px;
         }
-
-            /* Custom Webkit Scrollbar for clean visibility */
-            .events-grid::-webkit-scrollbar {
-                width: 6px;
-            }
-
-            .events-grid::-webkit-scrollbar-track {
-                background: #e2e8f0;
-                border-radius: 10px;
-            }
-
-            .events-grid::-webkit-scrollbar-thumb {
-                background: var(--primary-red);
-                border-radius: 10px;
-            }
 
         .event-item {
             display: flex;
@@ -331,11 +311,11 @@
                     </div>
                 </div>
 
-                <!-- Schedule-Mapped Eligible Events Checklist -->
+                <!-- Redesigned Events Checklist (Natural mobile page scroll instead of hidden inner scrollbar) -->
                 <div class="events-box">
                     <div class="events-header-hint">
                         <label style="margin: 0;">Eligible Events <span class="required">*</span></label>
-                        <span>👇 Scroll to view more</span>
+                        <span id="eventCountBadge" style="display:none;">0 events available</span>
                     </div>
                     <p style="font-size: 0.75rem; color: #64748b; margin-bottom: 8px;">Filtered automatically according to participant's age</p>
 
@@ -389,9 +369,11 @@
         function filterEventsByAge() {
             const ageInput = document.getElementById('age').value;
             const container = document.getElementById('eventsContainer');
+            const badge = document.getElementById('eventCountBadge');
 
             if (ageInput === '' || isNaN(ageInput)) {
                 container.innerHTML = `<p style="font-size: 0.83rem; color: #94a3b8; text-align: center; padding: 15px;">Please enter participant's age above to view eligible events.</p>`;
+                badge.style.display = 'none';
                 document.getElementById('danceAudioBox').style.display = 'none';
                 return;
             }
@@ -401,23 +383,27 @@
 
             if (eligible.length === 0) {
                 container.innerHTML = `<p style="font-size: 0.83rem; color: #ef4444; text-align: center; padding: 15px;">No specific age-restricted events found for age ${ageVal}.</p>`;
+                badge.style.display = 'none';
                 return;
             }
+
+            badge.innerText = `${eligible.length} events found`;
+            badge.style.display = 'block';
 
             let html = '';
             eligible.forEach(ev => {
                 let subtextHtml = ev.subText ? `<span class="event-subtext">${ev.subText}</span>` : '';
                 html += `
-                        <label class="event-item">
-                          <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload()" />
-                          <div class="event-info">
-                            <span class="event-name">${ev.name}</span>
-                            ${subtextHtml}
-                            <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
-                          </div>
-                          <span class="category-tag">${ev.category}</span>
-                        </label>
-                      `;
+                    <label class="event-item">
+                      <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload()" />
+                      <div class="event-info">
+                        <span class="event-name">${ev.name}</span>
+                        ${subtextHtml}
+                        <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
+                      </div>
+                      <span class="category-tag">${ev.category}</span>
+                    </label>
+                  `;
             });
 
             container.innerHTML = html;
@@ -483,6 +469,7 @@
                     alertBox.style.display = 'block';
                     document.getElementById('regForm').reset();
                     document.getElementById('danceAudioBox').style.display = 'none';
+                    badge.style.display = 'none';
                     document.getElementById('eventsContainer').innerHTML = `<p style="font-size: 0.83rem; color: #94a3b8; text-align: center; padding: 15px;">Please enter participant's age above to view eligible events.</p>`;
                 } else {
                     throw new Error(data.message || "Failed to submit registration.");
