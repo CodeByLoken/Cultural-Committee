@@ -256,12 +256,15 @@
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 4px 14px rgba(193, 18, 31, 0.35);
-            transition: opacity 0.2s ease;
+            transition: all 0.2s ease;
         }
 
             .btn-submit:disabled {
-                opacity: 0.6;
+                background: #cbd5e1;
+                color: #64748b;
+                box-shadow: none;
                 cursor: not-allowed;
+                opacity: 0.8;
             }
 
         .alert-box {
@@ -292,7 +295,7 @@
         <div class="header-card">
             <div class="mantra">॥ श्री गणेशाय नमः ॥</div>
             <h1>Purvanchal Ganeshotsav 2026</h1>
-            <p>Cultural Events & Competitions Registration Portal</p>
+            <p>Cultural Events Registration Portal</p>
         </div>
 
         <div class="form-card">
@@ -302,7 +305,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Building / Tower <span class="required">*</span></label>
-                        <select id="building" required>
+                        <select id="building" required onchange="checkFormValidity()">
                             <option value="" disabled selected>Select Building</option>
                             <option value="A">Building A</option>
                             <option value="B">Building B</option>
@@ -324,7 +327,7 @@
                 <!-- Participant Name & WhatsApp -->
                 <div class="form-group">
                     <label>Participant Full Name <span class="required">*</span></label>
-                    <input type="text" id="participantName" placeholder="e.g. Aarav Sharma" required />
+                    <input type="text" id="participantName" placeholder="e.g. Aarav Sharma" required oninput="checkFormValidity()" />
                 </div>
 
                 <div class="form-row">
@@ -366,13 +369,13 @@
                     <textarea id="notes" rows="2" placeholder="Mention group members or partner names if registering for group dance..."></textarea>
                 </div>
 
-                <!-- Gentle Note before Submit (Bold & Multi-line) -->
+                <!-- Gentle Note before Submit -->
                 <div class="info-note">
                     🌸 <strong>Note: All these events are organized purely for community engagement and joyful celebration, rather than formal competition.</strong><br>
                     <strong>Let's come together and enjoy!</strong>
                 </div>
 
-                <button type="submit" class="btn-submit" id="submitBtn">Submit Event Registration</button>
+                <button type="submit" class="btn-submit" id="submitBtn" disabled>Submit Event Registration</button>
                 <div id="statusAlert" class="alert-box"></div>
             </form>
         </div>
@@ -401,21 +404,46 @@
             { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', subText: '✨ Showcase your best talent — sing, dance, play an instrument, do magic, or anything unique!', date: '23rd Sep (Wednesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
         ];
 
-        // Real-time Flat Number Validation (Numbers only, max 4 digits)
+        // Master function to check if form is fully valid and toggle Submit button state
+        function checkFormValidity() {
+            const building = document.getElementById('building').value;
+            const flat = document.getElementById('flat').value.trim();
+            const participantName = document.getElementById('participantName').value.trim();
+            const age = document.getElementById('age').value;
+            const whatsapp = document.getElementById('whatsapp').value.trim();
+            const checkedEvents = document.querySelectorAll('input[name="selected_events"]:checked');
+
+            const isBuildingValid = building !== '';
+            const isFlatValid = flat.length > 0 && flat.length <= 4;
+            const isNameValid = participantName !== '';
+            const isAgeValid = age !== '' && !isNaN(age) && parseInt(age, 10) >= 0;
+            const isWhatsappValid = whatsapp.length === 10;
+            const isEventSelected = checkedEvents.length > 0;
+
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (isBuildingValid && isFlatValid && isNameValid && isAgeValid && isWhatsappValid && isEventSelected) {
+                submitBtn.removeAttribute('disabled');
+            } else {
+                submitBtn.setAttribute('disabled', 'true');
+            }
+        }
+
+        // Real-time Flat Number Validation
         function validateFlatInput(input) {
             let val = input.value.replace(/[^0-9]/g, '').slice(0, 4);
             input.value = val;
             const hint = document.getElementById('flatHint');
             if (val.length > 0 && val.length <= 4) {
                 hint.className = 'input-hint success';
-                hint.innerText = '✓ Valid flat number';
             } else {
                 hint.className = 'input-hint error';
                 hint.innerText = 'Numbers only (max 4 digits)';
             }
+            checkFormValidity();
         }
 
-        // Real-time WhatsApp Validation (Numbers only, exact 10 digits)
+        // Real-time WhatsApp Validation
         function validateWhatsAppInput(input) {
             let val = input.value.replace(/[^0-9]/g, '').slice(0, 10);
             input.value = val;
@@ -427,6 +455,7 @@
                 hint.className = 'input-hint error';
                 hint.innerText = `Enter 10 digits (${val.length}/10)`;
             }
+            checkFormValidity();
         }
 
         function filterEventsByAge() {
@@ -438,6 +467,7 @@
                 container.innerHTML = `<p style="font-size: 0.83rem; color: #94a3b8; text-align: center; padding: 15px;">Please enter participant's age above to view eligible events.</p>`;
                 badge.style.display = 'none';
                 document.getElementById('danceAudioBox').style.display = 'none';
+                checkFormValidity();
                 return;
             }
 
@@ -447,6 +477,7 @@
             if (eligible.length === 0) {
                 container.innerHTML = `<p style="font-size: 0.83rem; color: #ef4444; text-align: center; padding: 15px;">No specific age-restricted events found for age ${ageVal}.</p>`;
                 badge.style.display = 'none';
+                checkFormValidity();
                 return;
             }
 
@@ -458,7 +489,7 @@
                 let subtextHtml = ev.subText ? `<span class="event-subtext">${ev.subText}</span>` : '';
                 html += `
                     <label class="event-item">
-                      <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload()" />
+                      <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload(); checkFormValidity();" />
                       <div class="event-info">
                         <span class="event-name">${ev.name}</span>
                         ${subtextHtml}
@@ -471,6 +502,7 @@
 
             container.innerHTML = html;
             toggleAudioUpload();
+            checkFormValidity();
         }
 
         function toggleAudioUpload() {
@@ -549,6 +581,7 @@
                     document.getElementById('eventsContainer').innerHTML = `<p style="font-size: 0.83rem; color: #94a3b8; text-align: center; padding: 15px;">Please enter participant's age above to view eligible events.</p>`;
                     document.getElementById('flatHint').innerText = '';
                     document.getElementById('whatsappHint').innerText = '';
+                    checkFormValidity();
                 } else {
                     throw new Error(data.message || "Failed to submit registration.");
                 }
@@ -556,9 +589,7 @@
                 alertBox.className = 'alert-box alert-error';
                 alertBox.innerText = `Error: ${err.message}`;
                 alertBox.style.display = 'block';
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Submit Event Registration";
+                checkFormValidity();
             }
         }
     </script>
