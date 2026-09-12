@@ -122,13 +122,13 @@
             flex-direction: column;
             gap: 10px;
             margin-top: 8px;
-            max-height: 260px;
+            max-height: 280px;
             overflow-y: auto;
         }
 
         .event-item {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             background: white;
             padding: 10px 14px;
             border-radius: 8px;
@@ -145,6 +145,7 @@
                 width: 18px;
                 height: 18px;
                 margin-right: 12px;
+                margin-top: 2px;
                 accent-color: var(--primary-red);
             }
 
@@ -159,9 +160,17 @@
             color: var(--dark-blue);
         }
 
+        .event-subtext {
+            font-size: 0.75rem;
+            color: #d97706;
+            font-style: italic;
+            margin-top: 1px;
+        }
+
         .event-timing {
             font-size: 0.73rem;
             color: #64748b;
+            margin-top: 2px;
         }
 
         .category-tag {
@@ -309,7 +318,7 @@
     </div>
 
     <script>
-        // Complete Master Schedule Mapped directly from your festival event list
+        // Master Schedule Mapped directly from your festival event list with Got Talent subtext added
         const EVENTS_MASTER = [
             { id: 'straw_game', name: 'Straw Building Game', date: '15th Sep (Tuesday)', time: '7:30 PM', minAge: 0, maxAge: 9, category: 'Age: 0-9' },
             { id: 'sudoku', name: 'Sudoku Game', date: '15th Sep (Tuesday)', time: '8:30 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16' },
@@ -321,7 +330,7 @@
             { id: 'dance_solo_kids', name: 'Dance (Solo)', date: '18th Sep (Friday)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
             { id: 'dance_group_kids', name: 'Group Dance', date: '18th Sep (Friday)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
             { id: 'marathon', name: 'Marathon', date: '19th Sep (Saturday)', time: '7:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'drawing', name: 'Drawing Competition', date: '19th Sep (Saturday)', time: '11:00 AM',  minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'drawing', name: 'Drawing Competition', date: '19th Sep (Saturday)', time: '11:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
             { id: 'chess', name: 'Chess Competition', date: '19th Sep (Saturday)', time: '2:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
             { id: 'tug_of_war', name: 'Tug of War', date: '19th Sep (Saturday)', time: '5:00 PM', minAge: 10, maxAge: 99, category: 'Age 10+' },
             { id: 'dance_solo_adults', name: 'Dance (Solo)', date: '19th Sep (Saturday)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years' },
@@ -329,7 +338,7 @@
             { id: 'foodstall', name: 'Food Stall / Anand Mela', date: '20th Sep (Sunday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
             { id: 'musicalchair', name: 'Musical Chair', date: '21st Sep (Monday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
             { id: 'hit_wicket', name: 'Hit Wicket', date: '22nd Sep (Tuesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', date: '23rd Sep (Wedneday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
+            { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', subText: '✨ Showcase your best talent — sing, play an instrument, do magic, or anything unique!', date: '23rd Sep (Wednesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
         ];
 
         function filterEventsByAge() {
@@ -352,16 +361,18 @@
 
             let html = '';
             eligible.forEach(ev => {
+                let subtextHtml = ev.subText ? `<span class="event-subtext">${ev.subText}</span>` : '';
                 html += `
-            <label class="event-item">
-              <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload()" />
-              <div class="event-info">
-                <span class="event-name">${ev.name}</span>
-                <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
-              </div>
-              <span class="category-tag">${ev.category}</span>
-            </label>
-          `;
+                    <label class="event-item">
+                      <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload()" />
+                      <div class="event-info">
+                        <span class="event-name">${ev.name}</span>
+                        ${subtextHtml}
+                        <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
+                      </div>
+                      <span class="category-tag">${ev.category}</span>
+                    </label>
+                  `;
             });
 
             container.innerHTML = html;
