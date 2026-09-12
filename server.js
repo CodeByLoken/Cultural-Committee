@@ -435,6 +435,30 @@ app.post('/api/annadan/admin/update', async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
+// Add New Annadan Item (Admin Action)
+app.post('/api/annadan/admin/add', async (req, res) => {
+    try {
+        const { itemName, totalNeeded, unit, notes } = req.body;
+
+        if (!itemName || !totalNeeded || !unit) {
+            return res.status(400).json({ status: 'error', message: 'Item name, total needed, and unit are required.' });
+        }
+
+        await pool.query(`
+            INSERT INTO annadan_items (item_name, total_needed, total_pledged, unit, notes)
+            VALUES ($1, $2, 0, $3, $4)
+            ON CONFLICT (item_name) DO UPDATE 
+            SET total_needed = EXCLUDED.total_needed, 
+                unit = EXCLUDED.unit, 
+                notes = EXCLUDED.notes;
+        `, [itemName.trim(), parseInt(totalNeeded, 10), unit.trim(), notes ? notes.trim() : '']);
+
+        res.json({ status: 'success', message: 'New Annadan item added successfully.' });
+    } catch (err) {
+        console.error("Error adding Annadan item:", err.message);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
 
 // Static UI Routes
 app.get('/annadan', (req, res) => {

@@ -10,7 +10,6 @@
             --primary-red: #c1121f;
             --primary-gold: #ffb703;
             --dark-blue: #003049;
-            --bg-cream: #fffdf5;
             --border-color: #cbd5e1;
             --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
         }
@@ -29,7 +28,7 @@
         }
 
         .container {
-            max-width: 850px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
@@ -60,7 +59,72 @@
             padding: 20px;
             box-shadow: var(--card-shadow);
             border: 1px solid #f1f5f9;
+            margin-bottom: 20px;
         }
+
+            .card h3 {
+                color: var(--dark-blue);
+                margin-bottom: 14px;
+                font-size: 1.1rem;
+            }
+
+        /* Add Item Form Grid */
+        .add-form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 2fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        @media(max-width: 768px) {
+            .add-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+            .form-group label {
+                font-size: 0.78rem;
+                font-weight: 600;
+                margin-bottom: 4px;
+                color: var(--dark-blue);
+            }
+
+        input, select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            outline: none;
+            background: #fff;
+        }
+
+            input:focus, select:focus {
+                border-color: var(--primary-red);
+            }
+
+        .btn-add {
+            background: linear-gradient(135deg, #c1121f, #780000);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(193, 18, 31, 0.25);
+            height: 40px;
+            white-space: nowrap;
+        }
+
+            .btn-add:hover {
+                opacity: 0.9;
+            }
 
         table {
             width: 100%;
@@ -100,10 +164,6 @@
             outline: none;
         }
 
-            input.note-input:focus {
-                border-color: var(--primary-red);
-            }
-
         .btn-save {
             background: #059669;
             color: white;
@@ -133,21 +193,56 @@
     <div class="container">
         <div class="header-card">
             <h1>⚙️ Annadan Inventory Management</h1>
-            <p>Update quantities and add special notes or item instructions</p>
+            <p>Add new food items, update quantities, and manage item notes</p>
         </div>
 
+        <!-- Add New Item Card -->
         <div class="card">
-            <h3 style="color: var(--dark-blue); margin-bottom: 12px;">Active Food Items & Instructions</h3>
+            <h3>➕ Add New Annadan Item</h3>
+            <form id="addItemForm" onsubmit="addNewItem(event)">
+                <div class="add-form-grid">
+                    <div class="form-group">
+                        <label>Item Name *</label>
+                        <input type="text" id="newItemName" placeholder="e.g. Mineral Water Bottles" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Total Needed *</label>
+                        <input type="number" id="newTotalNeeded" min="1" placeholder="e.g. 100" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Unit *</label>
+                        <select id="newUnit" required>
+                            <option value="Kg">Kg</option>
+                            <option value="Liters">Liters</option>
+                            <option value="Packets">Packets</option>
+                            <option value="Pieces">Pieces</option>
+                            <option value="Sets">Sets</option>
+                            <option value="Boxes">Boxes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Special Notes (Optional)</label>
+                        <input type="text" id="newNotes" placeholder="e.g. 1-litre bottles preferred" />
+                    </div>
+                    <button type="submit" class="btn-add">Add Item</button>
+                </div>
+            </form>
+            <div id="addStatusMsg" class="status-msg"></div>
+        </div>
+
+        <!-- Inventory Table Card -->
+        <div class="card">
+            <h3>📋 Active Food Items & Instructions</h3>
             <div style="overflow-x: auto;">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 22%;">Item Name</th>
+                            <th style="width: 26%;">Item Name</th>
                             <th style="width: 10%;">Needed</th>
                             <th style="width: 10%;">Pledged</th>
                             <th style="width: 10%;">Rem.</th>
-                            <th style="width: 35%;">Special Notes / Instructions</th>
-                            <th style="width: 13%;">Action</th>
+                            <th style="width: 32%;">Special Notes / Instructions</th>
+                            <th style="width: 12%;">Action</th>
                         </tr>
                     </thead>
                     <tbody id="adminTableBody">
@@ -168,20 +263,50 @@
                     let html = '';
                     data.items.forEach(item => {
                         html += `
-                                <tr>
-                                    <td><strong>${item.item_name}</strong><br><small style="color:#64748b;">(${item.unit})</small></td>
-                                    <td><input type="number" id="needed_${item.id}" class="qty-input" value="${item.total_needed}" /></td>
-                                    <td><input type="number" id="pledged_${item.id}" class="qty-input" value="${item.total_pledged}" /></td>
-                                    <td><strong>${item.remaining_qty}</strong></td>
-                                    <td><input type="text" id="note_${item.id}" class="note-input" value="${item.notes || ''}" placeholder="e.g. Only loose grain brand..." /></td>
-                                    <td><button class="btn-save" onclick="updateItem(${item.id})">Save</button></td>
-                                </tr>
-                            `;
+                            <tr>
+                                <td><strong>${item.item_name}</strong><br><small style="color:#64748b;">(${item.unit})</small></td>
+                                <td><input type="number" id="needed_${item.id}" class="qty-input" value="${item.total_needed}" /></td>
+                                <td><input type="number" id="pledged_${item.id}" class="qty-input" value="${item.total_pledged}" /></td>
+                                <td><strong>${item.remaining_qty}</strong></td>
+                                <td><input type="text" id="note_${item.id}" class="note-input" value="${item.notes || ''}" placeholder="e.g. Brand instructions..." /></td>
+                                <td><button class="btn-save" onclick="updateItem(${item.id})">Save</button></td>
+                            </tr>
+                        `;
                     });
                     document.getElementById('adminTableBody').innerHTML = html;
                 }
             } catch (err) {
                 document.getElementById('adminTableBody').innerHTML = `<tr><td colspan="6" style="text-align:center; color:#c1121f;">Failed to load items.</td></tr>`;
+            }
+        }
+
+        async function addNewItem(e) {
+            e.preventDefault();
+            const itemName = document.getElementById('newItemName').value.trim();
+            const totalNeeded = document.getElementById('newTotalNeeded').value.trim();
+            const unit = document.getElementById('newUnit').value;
+            const notes = document.getElementById('newNotes').value.trim();
+            const msgBox = document.getElementById('addStatusMsg');
+
+            try {
+                const res = await fetch('/api/annadan/admin/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ itemName, totalNeeded, unit, notes })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    msgBox.style.color = '#059669';
+                    msgBox.innerText = '🎉 New item added successfully!';
+                    document.getElementById('addItemForm').reset();
+                    loadAdminAnnadan();
+                    setTimeout(() => { msgBox.innerText = ''; }, 3500);
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (err) {
+                msgBox.style.color = '#c1121f';
+                msgBox.innerText = `Error: ${err.message}`;
             }
         }
 
@@ -215,4 +340,4 @@
         window.onload = loadAdminAnnadan;
     </script>
 </body>
-</html> 
+</html>
