@@ -42,33 +42,41 @@
             box-shadow: var(--card-shadow);
         }
 
-            .header-card .mantra {
-                color: var(--primary-gold);
-                font-weight: 600;
-                font-size: 0.92rem;
-                margin-bottom: 6px;
-                letter-spacing: 0.5px;
-            }
+        .ganesh-icon {
+            width: 48px;
+            height: 48px;
+            fill: var(--primary-gold);
+            margin-bottom: 8px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
 
-            .header-card .subtitle-event {
-                font-size: 0.9rem;
-                font-weight: 600;
-                color: var(--primary-gold);
-                margin-bottom: 4px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-            }
+        .header-card .mantra {
+            color: var(--primary-gold);
+            font-weight: 600;
+            font-size: 0.92rem;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
 
-            .header-card h1 {
-                font-size: 1.4rem;
-                font-weight: 700;
-            }
+        .header-card .subtitle-event {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary-gold);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-            .header-card p {
-                font-size: 0.83rem;
-                opacity: 0.9;
-                margin-top: 4px;
-            }
+        .header-card h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .header-card p {
+            font-size: 0.83rem;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
 
         .search-box {
             position: relative;
@@ -177,6 +185,10 @@
 
     <div class="container">
         <div class="header-card">
+            <!-- Ganesh SVG Icon -->
+            <svg class="ganesh-icon" viewBox="0 0 24 24">
+                <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8Z" />
+            </svg>
             <div class="mantra">॥ श्री गणेशाय नमः ॥ &nbsp; | &nbsp; ॥ अन्नदाता सुखिनः भवन्तु ॥</div>
             <div class="subtitle-event">Purvanchal Ganeshotsav 2026</div>
             <h1>Annadan Seva Requirements</h1>
@@ -224,16 +236,16 @@
             let html = '';
             list.forEach(item => {
                 html += `
-                        <div class="item-card">
-                            <div class="item-info">
-                                <span class="item-name">${item.item_name}</span>
-                            </div>
-                            <div class="item-qty">
-                                <div class="qty-val">${item.remaining_qty} ${item.unit}</div>
-                                <div class="qty-label">Still Needed</div>
-                            </div>
+                    <div class="item-card">
+                        <div class="item-info">
+                            <span class="item-name">${item.item_name}</span>
                         </div>
-                    `;
+                        <div class="item-qty">
+                            <div class="qty-val">${item.remaining_qty} ${item.unit}</div>
+                            <div class="qty-label">Still Needed</div>
+                        </div>
+                    </div>
+                `;
             });
             container.innerHTML = html;
         }
