@@ -42,11 +42,10 @@
             box-shadow: var(--card-shadow);
         }
 
-        .ganesh-icon {
-            width: 48px;
-            height: 48px;
-            fill: var(--primary-gold);
-            margin-bottom: 8px;
+        .ganesh-svg {
+            width: 52px;
+            height: 52px;
+            margin-bottom: 6px;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
         }
 
@@ -185,10 +184,24 @@
 
     <div class="container">
         <div class="header-card">
-            <!-- Ganesh SVG Icon -->
-            <svg class="ganesh-icon" viewBox="0 0 24 24">
-                <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8Z" />
+            <!-- Corrected Ganesha Icon SVG -->
+            <svg class="ganesh-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Crown / Tilak Motif -->
+                <path d="M50 15L62 32H38L50 15Z" fill="#ffb703" />
+                <path d="M50 20L58 30H42L50 20Z" fill="#780000" />
+                <circle cx="50" cy="24" r="2" fill="#ffb703" />
+                <!-- Ears & Trunk Line Art -->
+                <path d="M35 35C20 35 15 50 22 62C27 70 38 68 42 58C44 52 45 42 45 40" stroke="#ffb703" stroke-width="4" stroke-linecap="round" />
+                <path d="M65 35C80 35 85 50 78 62C73 70 62 68 58 58C56 52 55 42 55 40" stroke="#ffb703" stroke-width="4" stroke-linecap="round" />
+                <!-- Face & Trunk Curve -->
+                <path d="M38 45C38 45 42 60 48 65C54 70 55 78 50 84C45 90 38 82 42 75" stroke="#ffb703" stroke-width="4" stroke-linecap="round" />
+                <circle cx="49" cy="82" r="3" fill="#ffb703" />
+                <!-- Modak / Tilak Details -->
+                <circle cx="50" cy="38" r="3" fill="#ffb703" />
+                <path d="M47 45H53" stroke="#ffb703" stroke-width="3" stroke-linecap="round" />
+                <path d="M48 49H52" stroke="#ffb703" stroke-width="2" stroke-linecap="round" />
             </svg>
+
             <div class="mantra">॥ श्री गणेशाय नमः ॥ &nbsp; | &nbsp; ॥ अन्नदाता सुखिनः भवन्तु ॥</div>
             <div class="subtitle-event">Purvanchal Ganeshotsav 2026</div>
             <h1>Annadan Seva Requirements</h1>
