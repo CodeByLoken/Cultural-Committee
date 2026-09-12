@@ -122,6 +122,8 @@
             flex-direction: column;
             gap: 10px;
             margin-top: 8px;
+            max-height: 260px;
+            overflow-y: auto;
         }
 
         .event-item {
@@ -146,15 +148,30 @@
                 accent-color: var(--primary-red);
             }
 
-            .event-item span {
-                font-size: 0.9rem;
-                font-weight: 500;
-            }
+        .event-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .event-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--dark-blue);
+        }
+
+        .event-timing {
+            font-size: 0.73rem;
+            color: #64748b;
+        }
 
         .category-tag {
-            font-size: 0.75rem;
-            color: #64748b;
+            font-size: 0.73rem;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 2px 6px;
+            border-radius: 4px;
             margin-left: auto;
+            white-space: nowrap;
         }
 
         .upload-box {
@@ -254,7 +271,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Age (Years) <span class="required">*</span></label>
-                        <input type="number" id="age" min="3" max="99" placeholder="e.g. 10" required oninput="filterEventsByAge()" />
+                        <input type="number" id="age" min="0" max="99" placeholder="e.g. 12" required oninput="filterEventsByAge()" />
                     </div>
 
                     <div class="form-group">
@@ -263,26 +280,26 @@
                     </div>
                 </div>
 
-                <!-- Dynamic Event Checklist Based on Age -->
+                <!-- Schedule-Mapped Eligible Events Checklist -->
                 <div class="events-box">
                     <label>Eligible Competitions & Events <span class="required">*</span></label>
-                    <p style="font-size: 0.78rem; color: #64748b;">(Events update dynamically as you enter the participant's age)</p>
+                    <p style="font-size: 0.78rem; color: #64748b;">(Filtered automatically according to participant's age)</p>
                     <div class="events-grid" id="eventsContainer">
                         <p style="font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 10px;">Please enter participant's age above to view eligible events.</p>
                     </div>
                 </div>
 
-                <!-- Audio Track Upload (Triggered if Dance is selected) -->
+                <!-- Audio Track Upload (Triggered if any Dance event is selected) -->
                 <div class="upload-box" id="danceAudioBox">
                     <label>🎵 Upload Performance Music Track (MP3/WAV)</label>
-                    <p style="font-size: 0.78rem; color: #92400e; margin-bottom: 8px;">Upload your dance track (Max size: 8MB).</p>
+                    <p style="font-size: 0.78rem; color: #92400e; margin-bottom: 8px;">Required for Solo/Group Dance performances (Max size: 8MB).</p>
                     <input type="file" id="audioFile" accept="audio/*" />
                 </div>
 
                 <!-- Additional Notes -->
                 <div class="form-group">
-                    <label>Special Instructions or Group Details (Optional)</label>
-                    <textarea id="notes" rows="2" placeholder="Mention group member names or specific requirements..."></textarea>
+                    <label>Special Notes or Group Details (Optional)</label>
+                    <textarea id="notes" rows="2" placeholder="Mention group members or partner names if registering for group dance..."></textarea>
                 </div>
 
                 <button type="submit" class="btn-submit" id="submitBtn">Submit Event Registration</button>
@@ -292,124 +309,135 @@
     </div>
 
     <script>
-  // Event Rules & Age Groups
-  const EVENTS_MASTER = [
-    { id: 'drawing_kids', name: '🎨 Drawing & Coloring', minAge: 3, maxAge: 8, category: 'Kids (3-8 yrs)' },
-    { id: 'drawing_juniors', name: '🎨 Drawing & Sketching', minAge: 9, maxAge: 15, category: 'Juniors (9-15 yrs)' },
-    { id: 'shloka', name: '🕉️ Sanskrit Shloka Chanting', minAge: 4, maxAge: 14, category: 'Juniors (4-14 yrs)' },
-    { id: 'fancy_dress', name: '🎭 Fancy Dress Competition', minAge: 3, maxAge: 10, category: 'Kids (3-10 yrs)' },
-    { id: 'dance_solo_kids', name: '💃 Solo Dance (Kids)', minAge: 4, maxAge: 10, isDance: true, category: 'Kids' },
-    { id: 'dance_solo_juniors', name: '💃 Solo Dance (Juniors)', minAge: 11, maxAge: 17, isDance: true, category: 'Juniors' },
-    { id: 'dance_group', name: '🕺 Group Dance Performance', minAge: 5, maxAge: 99, isDance: true, category: 'Open Group' },
-    { id: 'singing_solo', name: '🎤 Solo Singing Contest', minAge: 8, maxAge: 99, category: 'Open Age' },
-    { id: 'modak_making', name: '🥟 Modak Making & Decoration', minAge: 16, maxAge: 99, category: 'Adults (16+ yrs)' },
-    { id: 'rangoli', name: '🌸 Traditional Rangoli Contest', minAge: 12, maxAge: 99, category: 'Open (12+ yrs)' }
-  ];
+        // Complete Master Schedule Mapped directly from your festival event list
+        const EVENTS_MASTER = [
+            { id: 'straw_game', name: 'Straw Building Game', date: '15th Sep (Tue)', time: '7:30 PM', minAge: 0, maxAge: 9, category: 'Age: 0-9' },
+            { id: 'sudoku', name: 'Sudoku Game', date: '15th Sep (Tue)', time: '8:30 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16' },
+            { id: 'rangoli_game', name: 'Rangoli Game', date: '15th Sep (Tue)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
+            { id: 'puzzle', name: 'Puzzle game', date: '16th Sep (Wed)', time: '8:00 PM', minAge: 0, maxAge: 10, category: 'Age: 0-10' },
+            { id: 'balloon_burst_1', name: 'Balloon Burst Game', date: '16th Sep (Wed)', time: '8:00 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16' },
+            { id: 'balloon_burst_2', name: 'Balloon Burst Game', date: '17th Sep (Thu)', time: '7:30 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
+            { id: 'needle_thread', name: 'Needle Thread game', date: '17th Sep (Thu)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
+            { id: 'dance_solo_kids', name: 'Dance (Solo)', date: '18th Sep (Fri)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
+            { id: 'dance_group_kids', name: 'Group Dance', date: '18th Sep (Fri)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
+            { id: 'marathon', name: 'Marathon', date: '19th Sep (Sat)', time: '7:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'drawing', name: 'Drawing Competition', date: '19th Sep (Sat)', time: '11:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'chess', name: 'Chess Competition', date: '19th Sep (Sat)', time: '2:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'tug_of_war', name: 'Tug of War', date: '19th Sep (Sat)', time: '5:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'dance_solo_adults', name: 'Dance (Solo)', date: '19th Sep (Sat)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years' },
+            { id: 'dance_group_adults', name: 'Group Dance', date: '19th Sep (Sat)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years' },
+            { id: 'hit_wicket', name: 'Hit Wicket', date: '22nd Sep (Tue)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
+            { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', date: '23rd Sep (Wed)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
+        ];
 
-  function filterEventsByAge() {
-    const ageVal = parseInt(document.getElementById('age').value, 10);
-    const container = document.getElementById('eventsContainer');
+        function filterEventsByAge() {
+            const ageInput = document.getElementById('age').value;
+            const container = document.getElementById('eventsContainer');
 
-    if (isNaN(ageVal) || ageVal <= 0) {
-      container.innerHTML = `<p style="font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 10px;">Please enter participant's age above to view eligible events.</p>`;
-      document.getElementById('danceAudioBox').style.display = 'none';
-      return;
-    }
+            if (ageInput === '' || isNaN(ageInput)) {
+                container.innerHTML = `<p style="font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 10px;">Please enter participant's age above to view eligible events.</p>`;
+                document.getElementById('danceAudioBox').style.display = 'none';
+                return;
+            }
 
-    const eligible = EVENTS_MASTER.filter(e => ageVal >= e.minAge && ageVal <= e.maxAge);
+            const ageVal = parseInt(ageInput, 10);
+            const eligible = EVENTS_MASTER.filter(e => ageVal >= e.minAge && ageVal <= e.maxAge);
 
-    if (eligible.length === 0) {
-      container.innerHTML = `<p style="font-size: 0.85rem; color: #ef4444; text-align: center; padding: 10px;">No specific events found for age ${ageVal}.</p>`;
-      return;
-    }
+            if (eligible.length === 0) {
+                container.innerHTML = `<p style="font-size: 0.85rem; color: #ef4444; text-align: center; padding: 10px;">No specific age-restricted events found for age ${ageVal}.</p>`;
+                return;
+            }
 
-    let html = '';
-    eligible.forEach(ev => {
-      html += `
-        <label class="event-item">
-          <input type="checkbox" name="selected_events" value="${ev.name}" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload()" />
-          <span>${ev.name}</span>
-          <span class="category-tag">${ev.category}</span>
-        </label>
-      `;
-    });
+            let html = '';
+            eligible.forEach(ev => {
+                html += `
+            <label class="event-item">
+              <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload()" />
+              <div class="event-info">
+                <span class="event-name">${ev.name}</span>
+                <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
+              </div>
+              <span class="category-tag">${ev.category}</span>
+            </label>
+          `;
+            });
 
-    container.innerHTML = html;
-    toggleAudioUpload();
-  }
+            container.innerHTML = html;
+            toggleAudioUpload();
+        }
 
-  function toggleAudioUpload() {
-    const checked = Array.from(document.querySelectorAll('input[name="selected_events"]:checked'));
-    const isDanceSelected = checked.some(input => input.dataset.isDance === 'true');
-    document.getElementById('danceAudioBox').style.display = isDanceSelected ? 'block' : 'none';
-  }
+        function toggleAudioUpload() {
+            const checked = Array.from(document.querySelectorAll('input[name="selected_events"]:checked'));
+            const isDanceSelected = checked.some(input => input.dataset.isDance === 'true');
+            document.getElementById('danceAudioBox').style.display = isDanceSelected ? 'block' : 'none';
+        }
 
-  async function handleRegistration(e) {
-    e.preventDefault();
+        async function handleRegistration(e) {
+            e.preventDefault();
 
-    const checkedBoxes = Array.from(document.querySelectorAll('input[name="selected_events"]:checked'));
-    if (checkedBoxes.length === 0) {
-      alert("Please select at least one event/competition.");
-      return;
-    }
+            const checkedBoxes = Array.from(document.querySelectorAll('input[name="selected_events"]:checked'));
+            if (checkedBoxes.length === 0) {
+                alert("Please select at least one event/competition from the checklist.");
+                return;
+            }
 
-    const btn = document.getElementById('submitBtn');
-    const alertBox = document.getElementById('statusAlert');
-    btn.disabled = true;
-    btn.innerText = "Processing Registration...";
-    alertBox.style.display = 'none';
+            const btn = document.getElementById('submitBtn');
+            const alertBox = document.getElementById('statusAlert');
+            btn.disabled = true;
+            btn.innerText = "Processing Registration...";
+            alertBox.style.display = 'none';
 
-    const building = document.getElementById('building').value;
-    const flat = document.getElementById('flat').value.trim();
-    const participantName = document.getElementById('participantName').value.trim();
-    const age = document.getElementById('age').value;
-    const whatsapp = document.getElementById('whatsapp').value.trim();
-    const notes = document.getElementById('notes').value.trim();
-    const events = checkedBoxes.map(b => b.value);
+            const building = document.getElementById('building').value;
+            const flat = document.getElementById('flat').value.trim();
+            const participantName = document.getElementById('participantName').value.trim();
+            const age = document.getElementById('age').value;
+            const whatsapp = document.getElementById('whatsapp').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+            const events = checkedBoxes.map(b => b.value);
 
-    let audioBase64 = null;
-    let audioFileName = null;
+            let audioBase64 = null;
+            let audioFileName = null;
 
-    const fileInput = document.getElementById('audioFile');
-    if (fileInput.files.length > 0) {
-      const file = fileInput.files[0];
-      audioFileName = file.name;
-      audioBase64 = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
-    }
+            const fileInput = document.getElementById('audioFile');
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                audioFileName = file.name;
+                audioBase64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsDataURL(file);
+                });
+            }
 
-    try {
-      const res = await fetch('/api/register-event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          building, flat, participantName, age, whatsapp, events, audioBase64, audioFileName, notes
-        })
-      });
+            try {
+                const res = await fetch('/api/register-event', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        building, flat, participantName, age, whatsapp, events, audioBase64, audioFileName, notes
+                    })
+                });
 
-      const data = await res.json();
-      if (data.status === 'success') {
-        alertBox.className = 'alert-box alert-success';
-        alertBox.innerHTML = `🎉 <strong>Registration Successful!</strong><br>Registration ID: <strong>#REG-${data.registrationId}</strong>.<br>The cultural committee will reach out on WhatsApp with program slots.`;
-        alertBox.style.display = 'block';
-        document.getElementById('regForm').reset();
-        document.getElementById('danceAudioBox').style.display = 'none';
-        document.getElementById('eventsContainer').innerHTML = `<p style="font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 10px;">Please enter participant's age above to view eligible events.</p>`;
-      } else {
-        throw new Error(data.message || "Failed to submit.");
-      }
-    } catch (err) {
-      alertBox.className = 'alert-box alert-error';
-      alertBox.innerText = `Error: ${err.message}`;
-      alertBox.style.display = 'block';
-    } finally {
-      btn.disabled = false;
-      btn.innerText = "Submit Event Registration";
-    }
-  }
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alertBox.className = 'alert-box alert-success';
+                    alertBox.innerHTML = `🎉 <strong>Registration Successful!</strong><br>Registration ID: <strong>#REG-${data.registrationId}</strong>.<br>The cultural coordinators will contact you on WhatsApp with reporting times.`;
+                    alertBox.style.display = 'block';
+                    document.getElementById('regForm').reset();
+                    document.getElementById('danceAudioBox').style.display = 'none';
+                    document.getElementById('eventsContainer').innerHTML = `<p style="font-size: 0.85rem; color: #94a3b8; text-align: center; padding: 10px;">Please enter participant's age above to view eligible events.</p>`;
+                } else {
+                    throw new Error(data.message || "Failed to submit registration.");
+                }
+            } catch (err) {
+                alertBox.className = 'alert-box alert-error';
+                alertBox.innerText = `Error: ${err.message}`;
+                alertBox.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Submit Event Registration";
+            }
+        }
     </script>
 </body>
 </html>
