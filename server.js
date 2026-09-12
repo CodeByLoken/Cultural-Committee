@@ -389,10 +389,10 @@ app.post('/api/register-event', async (req, res) => {
 app.get('/api/annadan/items', async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT id, item_name, category, (total_needed - total_pledged) AS remaining_qty, unit, notes 
+            SELECT id, item_name, (total_needed - total_pledged) AS remaining_qty, unit, notes 
             FROM annadan_items 
             WHERE (total_needed - total_pledged) > 0 
-            ORDER BY category, item_name ASC;
+            ORDER BY item_name ASC;
         `);
         res.json({ status: 'success', items: result.rows });
     } catch (err) {
