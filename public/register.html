@@ -231,6 +231,16 @@
                 color: #b45309;
             }
 
+        .or-divider {
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #d97706;
+            margin: 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
         /* Gentle Notice Banner */
         .info-note {
             background: #f0fdf4;
@@ -356,11 +366,16 @@
                     </div>
                 </div>
 
-                <!-- Audio Track Upload (Triggered if any Dance event is selected) -->
+                <!-- Audio Track Upload or YouTube Link (Triggered if any Dance event is selected) -->
                 <div class="upload-box" id="danceAudioBox">
-                    <label>🎵 Upload Performance Music Track (MP3/WAV)</label>
-                    <p style="font-size: 0.78rem; color: #92400e; margin-bottom: 8px;">Required for Solo/Group Dance performances (Max size: 8MB).</p>
-                    <input type="file" id="audioFile" accept="audio/*" />
+                    <label>🎵 Performance Music Track (Required for Dance)</label>
+                    <p style="font-size: 0.75rem; color: #92400e; margin-bottom: 8px;">Upload your audio file OR paste a YouTube link below.</p>
+
+                    <input type="file" id="audioFile" accept="audio/*" style="margin-bottom: 6px;" />
+
+                    <div class="or-divider">— OR —</div>
+
+                    <input type="url" id="youtubeUrl" placeholder="Paste YouTube song link (e.g. https://youtu.be/...)" />
                 </div>
 
                 <!-- Additional Notes -->
@@ -404,7 +419,6 @@
             { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', subText: '✨ Showcase your best talent — sing, play an instrument, do magic, or anything unique!', date: '23rd Sep (Wednesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
         ];
 
-        // Master function to check if form is fully valid and toggle Submit button state
         function checkFormValidity() {
             const building = document.getElementById('building').value;
             const flat = document.getElementById('flat').value.trim();
@@ -429,7 +443,6 @@
             }
         }
 
-        // Real-time Flat Number Validation
         function validateFlatInput(input) {
             let val = input.value.replace(/[^0-9]/g, '').slice(0, 4);
             input.value = val;
@@ -444,7 +457,6 @@
             checkFormValidity();
         }
 
-        // Real-time WhatsApp Validation
         function validateWhatsAppInput(input) {
             let val = input.value.replace(/[^0-9]/g, '').slice(0, 10);
             input.value = val;
@@ -546,6 +558,7 @@
             const participantName = document.getElementById('participantName').value.trim();
             const age = document.getElementById('age').value;
             const notes = document.getElementById('notes').value.trim();
+            const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
             const events = checkedBoxes.map(b => b.value);
 
             let audioBase64 = null;
@@ -567,14 +580,14 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        building, flat: flatVal, participantName, age, whatsapp: whatsappVal, events, audioBase64, audioFileName, notes
+                        building, flat: flatVal, participantName, age, whatsapp: whatsappVal, events, audioBase64, audioFileName, youtubeUrl, notes
                     })
                 });
 
                 const data = await res.json();
                 if (data.status === 'success') {
                     alertBox.className = 'alert-box alert-success';
-                    alertBox.innerHTML = `🎉 <strong>Registration Successful!</strong><br>Registration ID: <strong>#REG-${data.registrationId}</strong>.<br>Please connect with cultural event coordinators if you require more details.`;
+                    alertBox.innerHTML = `🎉 <strong>Registration Successful!</strong><br>Registration ID: <strong>#REG-${data.registrationId}</strong>..<br>Please connect with cultural event coordinators if you require more details.`;
                     alertBox.style.display = 'block';
                     document.getElementById('regForm').reset();
                     document.getElementById('danceAudioBox').style.display = 'none';
@@ -590,7 +603,6 @@
                 alertBox.innerText = `Error: ${err.message}`;
                 alertBox.style.display = 'block';
             } finally {
-                // Ensure button text and state are properly reset
                 btn.innerText = "Submit Event Registration";
                 checkFormValidity();
             }
