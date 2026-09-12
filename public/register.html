@@ -574,7 +574,7 @@
                 const data = await res.json();
                 if (data.status === 'success') {
                     alertBox.className = 'alert-box alert-success';
-                    alertBox.innerHTML = `🎉 <strong>Registration Successful!</strong><br>Registration ID: <strong>#REG-${data.registrationId}</strong>.<br>The cultural coordinators will contact you on WhatsApp with reporting times.`;
+                    alertBox.innerHTML = `🎉 <strong>Registration Successful!</strong><br>Registration ID: <strong>#REG-${data.registrationId}</strong>.<br>Please connect with cultural event coordinators if you require more details.`;
                     alertBox.style.display = 'block';
                     document.getElementById('regForm').reset();
                     document.getElementById('danceAudioBox').style.display = 'none';
