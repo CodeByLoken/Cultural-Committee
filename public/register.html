@@ -567,6 +567,10 @@
             const fileInput = document.getElementById('audioFile');
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
+                if (file.size > 20 * 1024 * 1024) {
+                    alert("Audio file is too large. Please select a file smaller than 20MB, or use a YouTube link instead.");
+                    return;
+                }
                 audioFileName = file.name;
                 audioBase64 = await new Promise((resolve) => {
                     const reader = new FileReader();
