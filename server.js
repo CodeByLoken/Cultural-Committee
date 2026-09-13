@@ -392,7 +392,7 @@ app.get('/api/annadan/items', async (req, res) => {
             SELECT id, item_name, (total_needed - total_pledged) AS remaining_qty, unit, notes 
             FROM annadan_items 
             WHERE (total_needed - total_pledged) > 0 
-            ORDER BY item_name ASC;
+            ORDER BY id ASC;
         `);
         res.json({ status: 'success', items: result.rows });
     } catch (err) {
