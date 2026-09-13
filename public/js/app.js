@@ -231,12 +231,12 @@ function handleLogout() {
 function switchTab(tabName) {
     const isAdmin = userRole === 'admin' || loggedInUser.toLowerCase().includes('admin');
 
-    if ((tabName === 'expense' || tabName === 'create') && !isAdmin) {
+    if ((tabName === 'expense' || tabName === 'create' || tabName === 'eventReport') && !isAdmin) {
         console.warn("Access Denied: Admin privileges required.");
         return;
     }
 
-    const tabs = ['create', 'analytics', 'expense', 'search'];
+    const tabs = ['create', 'analytics', 'expense', 'search', 'eventReport'];
     tabs.forEach(t => {
         const btn = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}Btn`);
         const content = document.getElementById(`tab${t.charAt(0).toUpperCase() + t.slice(1)}`);
@@ -246,9 +246,8 @@ function switchTab(tabName) {
         }
     });
 
-    if (tabName === 'analytics') {
-        fetchAnalyticsData();
-    }
+    if (tabName === 'analytics') fetchAnalyticsData();
+    if (tabName === 'eventReport') fetchEventReportDropdown();
 }
 
 function setFormFreeze(isFrozen) {
@@ -1018,4 +1017,140 @@ async function fetchAnalyticsData() {
     } catch (err) {
         console.error("Error loading analytics:", err);
     }
+}
+// Populate Dropdown with Registered Events and Counts
+async function fetchEventReportDropdown() {
+    const select = document.getElementById('reportEventSelect');
+    try {
+        const res = await fetch('/api/event-reports');
+        const data = await res.json();
+
+        if (data.status === 'success' && data.eventCounts) {
+            const currentVal = select.value;
+            select.innerHTML = '<option value="" disabled selected>-- Choose Event --</option>';
+            data.eventCounts.forEach(ev => {
+                const opt = document.createElement('option');
+                opt.value = ev.event_name;
+                opt.innerText = `${ev.event_name} (${ev.total_participants} registered)`;
+                select.appendChild(opt);
+            });
+            if (currentVal) select.value = currentVal;
+        }
+    } catch (err) {
+        console.error("Error loading event list:", err);
+    }
+}
+
+// Load Roster for Selected Event
+async function loadEventDetails() {
+    const eventName = document.getElementById('reportEventSelect').value;
+    const container = document.getElementById('eventRosterContainer');
+    const summaryPill = document.getElementById('eventSummaryPill');
+    const countSpan = document.getElementById('eventParticipantCount');
+
+    if (!eventName) return;
+
+    container.innerHTML = `<p class="center-text">Loading participants...</p>`;
+
+    try {
+        const res = await fetch(`/api/event-reports?eventName=${encodeURIComponent(eventName)}`);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            const list = data.participants || [];
+            countSpan.innerText = list.length;
+            summaryPill.style.display = 'block';
+
+            if (list.length === 0) {
+                container.innerHTML = `<p class="center-text">No participants registered for this event yet.</p>`;
+                return;
+            }
+
+            let html = `
+                <table class="data-table" id="eventPrintTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 25%;">Participant Name</th>
+                            <th style="width: 15%;">Flat</th>
+                            <th style="width: 10%;">Age</th>
+                            <th style="width: 15%;">WhatsApp</th>
+                            <th style="width: 15%;">Music Track</th>
+                            <th style="width: 15%;">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            list.forEach((p, idx) => {
+                const waClean = (p.whatsapp || '').replace(/[^0-9]/g, '');
+                const waLink = waClean.length === 10 ? `https://wa.me/91${waClean}` : `https://wa.me/${waClean}`;
+                const audioLink = p.audioFileUrl
+                    ? `<a href="${p.audioFileUrl}" target="_blank" style="color: #0284c7; font-weight: 600;">🎵 Audio Track</a>`
+                    : '<span style="color: #94a3b8;">-</span>';
+
+                html += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td><strong>${p.participantName}</strong></td>
+                        <td>${p.building}-${p.flat}</td>
+                        <td>${p.age} yrs</td>
+                        <td><a href="${waLink}" target="_blank" style="color: #25D366; text-decoration: none; font-weight: 600;">💬 ${p.whatsapp}</a></td>
+                        <td>${audioLink}</td>
+                        <td><small>${p.notes || '-'}</small></td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+    } catch (err) {
+        container.innerHTML = `<p class="center-text" style="color: #c1121f;">Error loading roster.</p>`;
+    }
+}
+
+// Print Roster for Event Coordinators
+function printEventReport() {
+    const eventName = document.getElementById('reportEventSelect').value;
+    const tableElement = document.getElementById('eventPrintTable');
+
+    if (!eventName || !tableElement) {
+        alert("Please select an event with registered participants to print.");
+        return;
+    }
+
+    const printWin = window.open('', '', 'width=900,height=700');
+    const origin = window.location.origin;
+
+    printWin.document.write(`
+        <html>
+            <head>
+                <title>Participant Roster - ${eventName}</title>
+                <link rel="stylesheet" href="${origin}/css/style.css" />
+                <style>
+                    body { padding: 30px; background: white; font-family: sans-serif; }
+                    h2 { margin-bottom: 4px; color: #003049; }
+                    .header-sub { margin-bottom: 20px; color: #64748b; font-size: 0.9rem; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th, td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; font-size: 0.85rem; }
+                    th { background-color: #f1f5f9; }
+                </style>
+            </head>
+            <body>
+                <h2>Purvanchal Ganeshotsav 2026 — Event Roster</h2>
+                <div class="header-sub"><strong>Event:</strong> ${eventName} | <strong>Generated On:</strong> ${new Date().toLocaleDateString('en-IN')}</div>
+                ${tableElement.outerHTML}
+                <script>
+                    window.onload = () => {
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 500);
+                    };
+                </script>
+            </body>
+        </html>
+    `);
+    printWin.document.close();
 }

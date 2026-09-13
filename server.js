@@ -459,6 +459,50 @@ app.post('/api/annadan/admin/add', async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
+// Get Event Registrations Report
+app.get('/api/event-reports', async (req, res) => {
+    try {
+        const { eventName } = req.query;
+
+        // 1. Overall registration count per event
+        const countsRes = await pool.query(`
+            SELECT unnest(events) AS event_name, COUNT(*) AS total_participants
+            FROM event_registrations
+            GROUP BY event_name
+            ORDER BY total_participants DESC;
+        `);
+
+        // 2. If a specific event is selected, fetch detailed participant records
+        let participants = [];
+        if (eventName) {
+            const listRes = await pool.query(`
+                SELECT 
+                    id,
+                    TO_CHAR(created_at, 'DD/MM/YYYY HH12:MI AM') AS registered_on,
+                    building,
+                    flat,
+                    participant_name AS "participantName",
+                    age,
+                    whatsapp,
+                    audio_file_url AS "audioFileUrl",
+                    notes
+                FROM event_registrations
+                WHERE $1 = ANY(events)
+                ORDER BY id ASC;
+            `, [eventName]);
+            participants = listRes.rows;
+        }
+
+        res.json({
+            status: 'success',
+            eventCounts: countsRes.rows,
+            participants
+        });
+    } catch (err) {
+        console.error("Event Report Error:", err.message);
+        res.status(500).json({ status: 'error', message: err.message });
+    }
+});
 
 // Static UI Routes
 app.get('/annadan', (req, res) => {

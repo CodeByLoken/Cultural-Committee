@@ -116,6 +116,7 @@
             <button class="tab-btn" id="tabAnalyticsBtn" onclick="switchTab('analytics')">📊 Analytics & Stats</button>
             <button class="tab-btn admin-only" id="tabExpenseBtn" onclick="switchTab('expense')" style="display: none;">💸 Manage Expenses (Admin)</button>
             <button class="tab-btn" id="tabSearchBtn" onclick="switchTab('search')">🔎 Search Receipts</button>
+            <button class="tab-btn admin-only" id="tabEventReportBtn" onclick="switchTab('eventReport')" style="display: none;">📋 Event Reports (Admin)</button>
         </nav>
 
         <!-- TAB 1: RECEIPT ENTRY FORM -->
@@ -335,7 +336,32 @@
 
             </div>
         </div>
+        <!-- TAB 5: ADMIN EVENT REPORTS MODULE -->
+        <div class="tab-content admin-only" id="tabEventReport" style="display: none;">
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>📋 Competition & Event Rosters</h2>
+                    <button class="btn-print-sm" onclick="printEventReport()">🖨️ Print Participant List</button>
+                </div>
 
+                <div style="display: flex; gap: 12px; margin: 16px 0; align-items: center;">
+                    <label style="font-weight: 600; white-space: nowrap;">Select Event / Competition:</label>
+                    <select id="reportEventSelect" onchange="loadEventDetails()" style="flex: 1; padding: 10px; border-radius: 8px; border: 1.5px solid var(--border-color);">
+                        <option value="" disabled selected>-- Choose Event --</option>
+                    </select>
+                </div>
+
+                <!-- Event Summary Badge -->
+                <div id="eventSummaryPill" style="display: none; background: #e0f2fe; color: #0369a1; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-weight: 600;">
+                    Total Registered: <span id="eventParticipantCount">0</span> participants
+                </div>
+
+                <!-- Participant Roster Table -->
+                <div class="table-wrapper" id="eventRosterContainer">
+                    <p class="placeholder-text">Select an event from the dropdown to load the participant roster.</p>
+                </div>
+            </div>
+        </div>
         <!-- TAB 3: SEARCH RECORDS -->
         <div class="tab-content" id="tabSearch" style="display: none;">
             <div class="card search-card">
