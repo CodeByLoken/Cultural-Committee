@@ -507,17 +507,17 @@
             eligible.forEach(ev => {
                 let subtextHtml = ev.subText ? `<span class="event-subtext">${ev.subText}</span>` : '';
                 html += `
-                                <label class="event-item">
-                                  <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload(); checkFormValidity();" />
-                                  <div class="event-info">
-                                    <span class="event-name">${ev.name}</span>
-                                    ${subtextHtml}
-                                    <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
-                                    <span class="event-volunteer">👤 Coordinator: ${ev.volunteer}</span>
-                                  </div>
-                                  <span class="category-tag">${ev.category}</span>
-                                </label>
-                              `;
+                            <label class="event-item">
+                              <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload(); checkFormValidity();" />
+                              <div class="event-info">
+                                <span class="event-name">${ev.name}</span>
+                                ${subtextHtml}
+                                <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
+                                <span class="event-volunteer">👤 Coordinator: ${ev.volunteer}</span>
+                              </div>
+                              <span class="category-tag">${ev.category}</span>
+                            </label>
+                          `;
             });
 
             container.innerHTML = html;
@@ -618,6 +618,32 @@
                 checkFormValidity();
             }
         }
+
+        function checkRegistrationDeadline() {
+            const deadline = new Date('2026-09-15T12:00:00');
+            const now = new Date();
+
+            if (now >= deadline) {
+                const submitBtn = document.getElementById('submitBtn');
+                const alertBox = document.getElementById('statusAlert');
+
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Registrations Closed";
+
+                alertBox.className = 'alert-box alert-error';
+                alertBox.innerHTML = `🔒 <strong>Registrations for Purvanchal Ganeshotsav 2026 are now closed!</strong><br>Thank you for an overwhelming response.`;
+                alertBox.style.display = 'block';
+
+                document.querySelectorAll('#regForm input, #regForm select, #regForm textarea').forEach(el => {
+                    el.disabled = true;
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkRegistrationDeadline();
+            setInterval(checkRegistrationDeadline, 60000);
+        });
     </script>
 </body>
 </html>

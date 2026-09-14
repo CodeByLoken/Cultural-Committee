@@ -69,12 +69,10 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
-// Analytics Route (Updated with Available Balance Breakdown)
 // Analytics Route (with Cumulative Running Balance)
 app.get('/api/analytics', async (req, res) => {
     try {
         const [dailyRes, buildingRes, paymentModeRes, expenseModeRes] = await Promise.all([
-            // 1. Date-Wise Daily Cash Flow with Running Cumulative Balance
             pool.query(`
                 WITH parsed_receipts AS (
                     SELECT 
@@ -134,8 +132,6 @@ app.get('/api/analytics', async (req, res) => {
                 FROM combined_daily
                 ORDER BY parsed_date DESC
             `),
-
-            // 2. Building / Tower-Wise Breakdown
             pool.query(`
                 WITH b_counts AS (
                     SELECT 
@@ -160,8 +156,6 @@ app.get('/api/analytics', async (req, res) => {
                 SELECT building, contributed_flats, total_receipts, total_amount FROM b_counts
                 ORDER BY total_amount DESC
             `),
-
-            // 3. Payment Mode Split (Collections)
             pool.query(`
                 SELECT 
                     payment_mode AS mode,
@@ -170,8 +164,6 @@ app.get('/api/analytics', async (req, res) => {
                 FROM receipts
                 GROUP BY payment_mode
             `),
-
-            // 4. Expense Mode Split
             pool.query(`
                 SELECT 
                     COALESCE(expense_type, 'online') AS mode,
@@ -195,14 +187,12 @@ app.get('/api/analytics', async (req, res) => {
     }
 });
 
-// Convert Amount to Words API
 app.get('/api/amount-words', (req, res) => {
     const { amount, lang } = req.query;
     const words = getAmountInWords(amount, lang || 'en');
     res.json({ words });
 });
 
-// Save Receipt API
 app.post('/api/save-receipt', async (req, res) => {
     const { name, whatsapp, flat, amount, familyCount, paymentMode, collectedBy, lang } = req.body;
     const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -224,8 +214,6 @@ app.post('/api/save-receipt', async (req, res) => {
         const receiptNo = dbRes.rows[0].receipt_no;
         await client.query('COMMIT');
 
-        console.log(`[DB SUCCESS] Receipt #${receiptNo} created for ${name} (${flat}) [Lang: ${lang || 'en'}]`);
-
         return res.json({
             status: 'success',
             receiptNo,
@@ -242,18 +230,14 @@ app.post('/api/save-receipt', async (req, res) => {
 
     } catch (error) {
         if (client) await client.query('ROLLBACK');
-        console.error("[DB ERROR] Save Receipt failed:", error.message);
         return res.status(500).json({ status: 'error', message: error.message });
     } finally {
         if (client) client.release();
     }
 });
 
-// Generate Image Endpoint
 app.post('/api/generate-receipt-image', async (req, res) => {
     const payload = req.body;
-    console.log(`[IMAGE START] Generating receipt image for #${payload.receiptNo}...`);
-
     try {
         const pdfResult = await generateReceiptPDF(payload);
 
@@ -285,12 +269,10 @@ app.post('/api/generate-receipt-image', async (req, res) => {
         }
 
     } catch (err) {
-        console.error(`[IMAGE ERROR] Receipt #${payload.receiptNo} failed:`, err.message);
         return res.status(500).json({ status: 'error', message: err.message });
     }
 });
 
-// Expenses Routes (Updated with expense_type)
 app.post('/api/save-expense', async (req, res) => {
     try {
         const { header, date, summary, vendor, amount, expenseType, createdBy } = req.body;
@@ -300,9 +282,7 @@ app.post('/api/save-expense', async (req, res) => {
             RETURNING id;
         `;
         await pool.query(insertQuery, [header, date, summary, vendor, amount, expenseType || 'online', createdBy]);
-
         syncToGoogleSheetAsync({ action: 'saveExpense', header, date, summary, vendor, amount, expenseType, createdBy });
-
         res.json({ status: 'success' });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
@@ -333,17 +313,20 @@ app.listen(PORT, '0.0.0.0', () => {
 
 require('./services/telegramBot');
 
-// 1. Serve Public Registration Page (No Login Required)
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'register.html'));
 });
 
-// 2. Public Event Registration Endpoint
+// Event Registration Endpoint with Strict Deadline Enforcement
 app.post('/api/register-event', async (req, res) => {
     try {
+        const deadline = new Date('2026-09-15T12:00:00');
+        if (new Date() >= deadline) {
+            return res.status(400).json({ status: 'error', message: 'Registrations are closed.' });
+        }
+
         const { building, flat, participantName, age, whatsapp, events, audioBase64, audioFileName, notes } = req.body;
 
-        // Removed volunteerName from this check since it's just display info on UI
         if (!building || !flat || !participantName || !age || !whatsapp || !events || events.length === 0) {
             return res.status(400).json({ status: 'error', message: 'All mandatory fields are required.' });
         }
@@ -385,7 +368,7 @@ app.post('/api/register-event', async (req, res) => {
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
-// 1. Get Public Annadan List (Includes notes and excludes items where remaining <= 0)
+
 app.get('/api/annadan/items', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -396,12 +379,10 @@ app.get('/api/annadan/items', async (req, res) => {
         `);
         res.json({ status: 'success', items: result.rows });
     } catch (err) {
-        console.error("Error fetching Annadan list:", err.message);
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
 
-// 2. Get All Annadan Items for Admin Management (Includes notes)
 app.get('/api/annadan/admin/items', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -411,16 +392,13 @@ app.get('/api/annadan/admin/items', async (req, res) => {
         `);
         res.json({ status: 'success', items: result.rows });
     } catch (err) {
-        console.error("Error fetching admin Annadan list:", err.message);
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
 
-// 3. Update Annadan Quantities & Notes (Admin Action)
 app.post('/api/annadan/admin/update', async (req, res) => {
     try {
         const { itemId, totalNeeded, totalPledged, notes } = req.body;
-
         await pool.query(`
             UPDATE annadan_items 
             SET total_needed = COALESCE($1, total_needed), 
@@ -431,15 +409,13 @@ app.post('/api/annadan/admin/update', async (req, res) => {
 
         res.json({ status: 'success', message: 'Annadan item updated successfully.' });
     } catch (err) {
-        console.error("Error updating Annadan item:", err.message);
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
-// Add New Annadan Item (Admin Action)
+
 app.post('/api/annadan/admin/add', async (req, res) => {
     try {
         const { itemName, totalNeeded, unit, notes } = req.body;
-
         if (!itemName || !totalNeeded || !unit) {
             return res.status(400).json({ status: 'error', message: 'Item name, total needed, and unit are required.' });
         }
@@ -455,16 +431,13 @@ app.post('/api/annadan/admin/add', async (req, res) => {
 
         res.json({ status: 'success', message: 'New Annadan item added successfully.' });
     } catch (err) {
-        console.error("Error adding Annadan item:", err.message);
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
-// Get Event Registrations Report
+
 app.get('/api/event-reports', async (req, res) => {
     try {
         const { eventName } = req.query;
-
-        // 1. Overall registration count per event
         const countsRes = await pool.query(`
             SELECT unnest(events) AS event_name, COUNT(*) AS total_participants
             FROM event_registrations
@@ -472,7 +445,6 @@ app.get('/api/event-reports', async (req, res) => {
             ORDER BY total_participants DESC;
         `);
 
-        // 2. If a specific event is selected, fetch detailed participant records
         let participants = [];
         if (eventName) {
             const listRes = await pool.query(`
@@ -499,12 +471,10 @@ app.get('/api/event-reports', async (req, res) => {
             participants
         });
     } catch (err) {
-        console.error("Event Report Error:", err.message);
         res.status(500).json({ status: 'error', message: err.message });
     }
 });
 
-// Static UI Routes
 app.get('/annadan', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'annadan.html'));
 });
