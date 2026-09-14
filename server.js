@@ -341,15 +341,15 @@ app.get('/register', (req, res) => {
 // 2. Public Event Registration Endpoint
 app.post('/api/register-event', async (req, res) => {
     try {
-        const { building, flat, participantName, age, whatsapp, events, audioBase64, audioFileName, youtubeUrl, notes, volunteerName } = req.body;
+        const { building, flat, participantName, age, whatsapp, events, audioBase64, audioFileName, notes } = req.body;
 
-        if (!building || !flat || !participantName || !age || !whatsapp || !events || events.length === 0 || !volunteerName) {
-            return res.status(400).json({ status: 'error', message: 'All mandatory fields including Volunteer Name are required.' });
+        // Removed volunteerName from this check since it's just display info on UI
+        if (!building || !flat || !participantName || !age || !whatsapp || !events || events.length === 0) {
+            return res.status(400).json({ status: 'error', message: 'All mandatory fields are required.' });
         }
 
         let audioFileUrl = null;
 
-        // If audio file is provided, upload to Google Drive via Apps Script
         if (audioBase64) {
             try {
                 const driveRes = await fetch(GOOGLE_SCRIPT_URL, {
@@ -372,11 +372,11 @@ app.post('/api/register-event', async (req, res) => {
         }
 
         const query = `
-            INSERT INTO event_registrations (building, flat, participant_name, age, whatsapp, events, audio_file_url, notes, volunteer_name)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO event_registrations (building, flat, participant_name, age, whatsapp, events, audio_file_url, notes)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING id;
         `;
-        const values = [building, flat, participantName, parseInt(age, 10), whatsapp, events, audioFileUrl, notes || '', volunteerName.trim()];
+        const values = [building, flat, participantName, parseInt(age, 10), whatsapp, events, audioFileUrl, notes || ''];
         const dbRes = await pool.query(query, values);
 
         res.json({ status: 'success', registrationId: dbRes.rows[0].id });
