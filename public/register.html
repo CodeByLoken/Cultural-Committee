@@ -207,6 +207,13 @@
             margin-top: 3px;
         }
 
+        .event-volunteer {
+            font-size: 0.72rem;
+            color: #059669;
+            font-weight: 600;
+            margin-top: 3px;
+        }
+
         .category-tag {
             font-size: 0.7rem;
             background: #f1f5f9;
@@ -241,7 +248,6 @@
             letter-spacing: 1px;
         }
 
-        /* Gentle Notice Banner */
         .info-note {
             background: #f0fdf4;
             border: 1px solid #bbf7d0;
@@ -384,12 +390,6 @@
                     <textarea id="notes" rows="2" placeholder="Mention group members or partner names if registering for group dance..."></textarea>
                 </div>
 
-                <!-- Volunteer Name -->
-                <div class="form-group">
-                    <label>Registered By (Volunteer Name) <span class="required">*</span></label>
-                    <input type="text" id="volunteerName" placeholder="e.g. Rajesh Kumar" required oninput="checkFormValidity()" />
-                </div>
-
                 <!-- Gentle Note before Submit -->
                 <div class="info-note">
                     🌸 <strong>Note: All these events are organized purely for community engagement and joyful celebration, rather than formal competition.</strong><br>
@@ -404,25 +404,25 @@
 
     <script>
         const EVENTS_MASTER = [
-            { id: 'straw_game', name: 'Straw Building Game', date: '15th Sep (Tuesday)', time: '7:30 PM', minAge: 0, maxAge: 9, category: 'Age: 0-9' },
-            { id: 'sudoku', name: 'Sudoku Game', date: '15th Sep (Tuesday)', time: '8:30 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16' },
-            { id: 'rangoli_game', name: 'Rangoli Game', date: '15th Sep (Tuesday)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
-            { id: 'puzzle', name: 'Puzzle game', date: '16th Sep (Wednesday)', time: '8:00 PM', minAge: 0, maxAge: 10, category: 'Age: 0-10' },
-            { id: 'balloon_burst_1', name: 'Balloon Burst Game', date: '16th Sep (Wednesday)', time: '8:00 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16' },
-            { id: 'balloon_burst_2', name: 'Balloon Burst Game', date: '17th Sep (Thursday)', time: '7:30 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
-            { id: 'needle_thread', name: 'Needle Thread game', date: '17th Sep (Thursday)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+' },
-            { id: 'dance_solo_kids', name: 'Dance (Solo)', date: '18th Sep (Friday)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
-            { id: 'dance_group_kids', name: 'Group Dance', date: '18th Sep (Friday)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years' },
-            { id: 'marathon', name: 'Marathon', date: '19th Sep (Saturday)', time: '7:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'drawing', name: 'Drawing Competition', date: '19th Sep (Saturday)', time: '11:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'chess', name: 'Chess Competition', date: '19th Sep (Saturday)', time: '2:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'tug_of_war', name: 'Tug of War', date: '19th Sep (Saturday)', time: '5:00 PM', minAge: 10, maxAge: 99, category: 'Age 10+' },
-            { id: 'dance_solo_adults', name: 'Dance (Solo)', date: '19th Sep (Saturday)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years' },
-            { id: 'dance_group_adults', name: 'Group Dance', date: '19th Sep (Saturday)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years' },
-            { id: 'foodstall', name: 'Food Stall / Anand Mela', subText: 'Registration Fees : ₹250/per table', date: '20th Sep (Sunday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'musicalchair', name: 'Musical Chair', date: '21st Sep (Monday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'hit_wicket', name: 'Hit Wicket', date: '22nd Sep (Tuesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' },
-            { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', subText: '✨ Showcase your best talent — sing, play an instrument, do magic, or anything unique!', date: '23rd Sep (Wednesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)' }
+            { id: 'straw_game', name: 'Straw Building Game', date: '15th Sep (Tuesday)', time: '7:30 PM', minAge: 0, maxAge: 9, category: 'Age: 0-9', volunteer: 'Chandra Mohan Tripathi - +91-7391092815' },
+            { id: 'sudoku', name: 'Sudoku Game', date: '15th Sep (Tuesday)', time: '8:30 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16', volunteer: 'Chandra Mohan Tripathi - +91-7391092815' },
+            { id: 'rangoli_game', name: 'Rangoli Game', date: '15th Sep (Tuesday)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+', volunteer: 'Chandra Mohan Tripathi - +91-7391092815' },
+            { id: 'puzzle', name: 'Puzzle game', date: '16th Sep (Wednesday)', time: '8:00 PM', minAge: 0, maxAge: 10, category: 'Age: 0-10', volunteer: 'Chandra Mohan Tripathi - +91-7391092815' },
+            { id: 'balloon_burst_1', name: 'Balloon Burst Game', date: '16th Sep (Wednesday)', time: '8:00 PM', minAge: 10, maxAge: 16, category: 'Age: 10-16', volunteer: 'Chandra Mohan Tripathi - +91-7391092815' },
+            { id: 'balloon_burst_2', name: 'Balloon Burst Game', date: '17th Sep (Thursday)', time: '7:30 PM', minAge: 16, maxAge: 99, category: 'Age: 16+', volunteer: 'Chandra Mohan Tripathi - +91-7391092815' },
+            { id: 'needle_thread', name: 'Needle Thread game', date: '17th Sep (Thursday)', time: '9:00 PM', minAge: 16, maxAge: 99, category: 'Age: 16+', volunteer: 'Chandra Mohan Tripathi - +91-7391092815' },
+            { id: 'dance_solo_kids', name: 'Dance (Solo)', date: '18th Sep (Friday)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years', volunteer: 'Utkarsh Keshri - +91-9663581532' },
+            { id: 'dance_group_kids', name: 'Group Dance', date: '18th Sep (Friday)', time: '7:00 PM Onwards', minAge: 0, maxAge: 16, isDance: true, category: 'Age: 0-16 years', volunteer: 'Utkarsh Keshri - +91-9663581532' },
+            { id: 'marathon', name: 'Marathon', date: '19th Sep (Saturday)', time: '7:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)', volunteer: 'Lokendra Singh Parmar +91-7757905600' },
+            { id: 'drawing', name: 'Drawing Competition', date: '19th Sep (Saturday)', time: '11:00 AM', minAge: 0, maxAge: 99, category: 'Open (All)', volunteer: 'Nitesh Singh - +91-8486918756' },
+            { id: 'chess', name: 'Chess Competition', date: '19th Sep (Saturday)', time: '2:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)', volunteer: 'Abhishek Malviya +91-8411007479' },
+            { id: 'tug_of_war', name: 'Tug of War', date: '19th Sep (Saturday)', time: '5:00 PM', minAge: 10, maxAge: 99, category: 'Age 10+', volunteer: 'Ritesh Mittal - +91-9665030051' },
+            { id: 'dance_solo_adults', name: 'Dance (Solo)', date: '19th Sep (Saturday)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years', volunteer: 'Utkarsh Keshri - +91-9663581532' },
+            { id: 'dance_group_adults', name: 'Group Dance', date: '19th Sep (Saturday)', time: '8:30 PM', minAge: 16, maxAge: 99, isDance: true, category: 'Age: 16+ years', volunteer: 'Utkarsh Keshri - +91-9663581532' },
+            { id: 'foodstall', name: 'Food Stall / Anand Mela', subText: 'Registration Fees : ₹250/per table', date: '20th Sep (Sunday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)', volunteer: 'Lokendra Singh Parmar +91-7757905600' },
+            { id: 'musicalchair', name: 'Musical Chair', date: '21st Sep (Monday)', time: '7:00 PM', minAge: 0, maxAge: 99, category: 'Open (All)', volunteer: 'Ritesh Mittal - +91-9665030051' },
+            { id: 'hit_wicket', name: 'Hit Wicket', date: '22nd Sep (Tuesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)', volunteer: 'Ritesh Mittal - +91-9665030051' },
+            { id: 'purvanchal_talent', name: 'Purvanchal Got Talent', subText: '✨ Showcase your best talent — sing, play an instrument, do magic, or anything unique!', date: '23rd Sep (Wednesday)', time: '7:30 PM', minAge: 0, maxAge: 99, category: 'Open (All)', volunteer: 'Abhishek Malviya +91-8411007479' }
         ];
 
         function checkFormValidity() {
@@ -431,7 +431,6 @@
             const participantName = document.getElementById('participantName').value.trim();
             const age = document.getElementById('age').value;
             const whatsapp = document.getElementById('whatsapp').value.trim();
-            const volunteerName = document.getElementById('volunteerName').value.trim();
             const checkedEvents = document.querySelectorAll('input[name="selected_events"]:checked');
 
             const isBuildingValid = building !== '';
@@ -439,12 +438,11 @@
             const isNameValid = participantName !== '';
             const isAgeValid = age !== '' && !isNaN(age) && parseInt(age, 10) >= 0;
             const isWhatsappValid = whatsapp.length === 10;
-            const isVolunteerValid = volunteerName !== '';
             const isEventSelected = checkedEvents.length > 0;
 
             const submitBtn = document.getElementById('submitBtn');
 
-            if (isBuildingValid && isFlatValid && isNameValid && isAgeValid && isWhatsappValid && isVolunteerValid && isEventSelected) {
+            if (isBuildingValid && isFlatValid && isNameValid && isAgeValid && isWhatsappValid && isEventSelected) {
                 submitBtn.removeAttribute('disabled');
             } else {
                 submitBtn.setAttribute('disabled', 'true');
@@ -515,6 +513,7 @@
                                     <span class="event-name">${ev.name}</span>
                                     ${subtextHtml}
                                     <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
+                                    <span class="event-volunteer">👤 Coordinator: ${ev.volunteer}</span>
                                   </div>
                                   <span class="category-tag">${ev.category}</span>
                                 </label>
@@ -566,7 +565,6 @@
             const participantName = document.getElementById('participantName').value.trim();
             const age = document.getElementById('age').value;
             const notes = document.getElementById('notes').value.trim();
-            const volunteerName = document.getElementById('volunteerName').value.trim();
             const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
             const events = checkedBoxes.map(b => b.value);
 
@@ -593,7 +591,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        building, flat: flatVal, participantName, age, whatsapp: whatsappVal, events, audioBase64, audioFileName, youtubeUrl, notes, volunteerName
+                        building, flat: flatVal, participantName, age, whatsapp: whatsappVal, events, audioBase64, audioFileName, youtubeUrl, notes
                     })
                 });
 
