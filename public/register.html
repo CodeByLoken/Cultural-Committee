@@ -384,6 +384,12 @@
                     <textarea id="notes" rows="2" placeholder="Mention group members or partner names if registering for group dance..."></textarea>
                 </div>
 
+                <!-- Volunteer Name -->
+                <div class="form-group">
+                    <label>Registered By (Volunteer Name) <span class="required">*</span></label>
+                    <input type="text" id="volunteerName" placeholder="e.g. Rajesh Kumar" required oninput="checkFormValidity()" />
+                </div>
+
                 <!-- Gentle Note before Submit -->
                 <div class="info-note">
                     🌸 <strong>Note: All these events are organized purely for community engagement and joyful celebration, rather than formal competition.</strong><br>
@@ -425,6 +431,7 @@
             const participantName = document.getElementById('participantName').value.trim();
             const age = document.getElementById('age').value;
             const whatsapp = document.getElementById('whatsapp').value.trim();
+            const volunteerName = document.getElementById('volunteerName').value.trim();
             const checkedEvents = document.querySelectorAll('input[name="selected_events"]:checked');
 
             const isBuildingValid = building !== '';
@@ -432,11 +439,12 @@
             const isNameValid = participantName !== '';
             const isAgeValid = age !== '' && !isNaN(age) && parseInt(age, 10) >= 0;
             const isWhatsappValid = whatsapp.length === 10;
+            const isVolunteerValid = volunteerName !== '';
             const isEventSelected = checkedEvents.length > 0;
 
             const submitBtn = document.getElementById('submitBtn');
 
-            if (isBuildingValid && isFlatValid && isNameValid && isAgeValid && isWhatsappValid && isEventSelected) {
+            if (isBuildingValid && isFlatValid && isNameValid && isAgeValid && isWhatsappValid && isVolunteerValid && isEventSelected) {
                 submitBtn.removeAttribute('disabled');
             } else {
                 submitBtn.setAttribute('disabled', 'true');
@@ -501,16 +509,16 @@
             eligible.forEach(ev => {
                 let subtextHtml = ev.subText ? `<span class="event-subtext">${ev.subText}</span>` : '';
                 html += `
-                        <label class="event-item">
-                          <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload(); checkFormValidity();" />
-                          <div class="event-info">
-                            <span class="event-name">${ev.name}</span>
-                            ${subtextHtml}
-                            <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
-                          </div>
-                          <span class="category-tag">${ev.category}</span>
-                        </label>
-                      `;
+                                <label class="event-item">
+                                  <input type="checkbox" name="selected_events" value="${ev.name} (${ev.date})" data-is-dance="${ev.isDance ? 'true' : 'false'}" onchange="toggleAudioUpload(); checkFormValidity();" />
+                                  <div class="event-info">
+                                    <span class="event-name">${ev.name}</span>
+                                    ${subtextHtml}
+                                    <span class="event-timing">📅 ${ev.date} @ ${ev.time}</span>
+                                  </div>
+                                  <span class="category-tag">${ev.category}</span>
+                                </label>
+                              `;
             });
 
             container.innerHTML = html;
@@ -558,6 +566,7 @@
             const participantName = document.getElementById('participantName').value.trim();
             const age = document.getElementById('age').value;
             const notes = document.getElementById('notes').value.trim();
+            const volunteerName = document.getElementById('volunteerName').value.trim();
             const youtubeUrl = document.getElementById('youtubeUrl').value.trim();
             const events = checkedBoxes.map(b => b.value);
 
@@ -584,7 +593,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        building, flat: flatVal, participantName, age, whatsapp: whatsappVal, events, audioBase64, audioFileName, youtubeUrl, notes
+                        building, flat: flatVal, participantName, age, whatsapp: whatsappVal, events, audioBase64, audioFileName, youtubeUrl, notes, volunteerName
                     })
                 });
 
