@@ -320,7 +320,7 @@ app.get('/register', (req, res) => {
 // Event Registration Endpoint with Strict Deadline Enforcement
 app.post('/api/register-event', async (req, res) => {
     try {
-        const deadline = new Date('2026-09-16T12:00:00');
+        const deadline = new Date('2026-09-17T09:00:00');
         if (new Date() >= deadline) {
             return res.status(400).json({ status: 'error', message: 'Registrations are closed.' });
         }
