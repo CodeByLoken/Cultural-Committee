@@ -144,7 +144,7 @@ app.get('/api/analytics', async (req, res) => {
                             WHEN LOWER(flat) LIKE 'e-%' THEN 'Building E'
                             WHEN LOWER(flat) LIKE 'f1-%' THEN 'Building F1'
                             WHEN LOWER(flat) LIKE 'maha%' THEN 'Mahaprasad Annadan'
-                            WHEN Lower(flat) LIKE 'vendor-' THEN 'Vendors'
+                            WHEN Lower(flat) LIKE 'vendo%' THEN 'Vendors'
                             ELSE 'Other'
                         END AS building,
                         COUNT(DISTINCT LOWER(flat)) AS contributed_flats,
