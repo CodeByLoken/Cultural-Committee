@@ -94,7 +94,7 @@
                 color: var(--dark-blue);
             }
 
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 9px 12px;
             border: 1.5px solid var(--border-color);
@@ -104,7 +104,7 @@
             background: #fff;
         }
 
-            input:focus, select:focus {
+            input:focus, select:focus, textarea:focus {
                 border-color: var(--primary-red);
             }
 
@@ -155,14 +155,17 @@
             text-align: center;
         }
 
-        input.note-input {
+        /* Expanded Textarea for Notes */
+        textarea.note-textarea {
             width: 100%;
-            padding: 8px 10px;
+            min-height: 80px;
+            padding: 10px;
             border: 1.5px solid var(--border-color);
             border-radius: 6px;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             outline: none;
             background: #fff;
+            resize: vertical;
         }
 
         .btn-save {
@@ -238,8 +241,9 @@
                 text-align: left;
             }
 
-            input.note-input {
+            textarea.note-textarea {
                 width: 100%;
+                min-height: 90px;
                 font-size: 0.9rem;
                 padding: 10px;
                 background: #fff;
@@ -334,7 +338,7 @@
                                 <td data-label="Total Needed"><input type="number" id="needed_${item.id}" class="qty-input" value="${item.total_needed}" /></td>
                                 <td data-label="Total Pledged"><input type="number" id="pledged_${item.id}" class="qty-input" value="${item.total_pledged}" /></td>
                                 <td data-label="Remaining"><strong>${item.remaining_qty}</strong></td>
-                                <td data-label="Special Notes / Instructions"><input type="text" id="note_${item.id}" class="note-input" value="${item.notes || ''}" placeholder="e.g. Brand instructions..." /></td>
+                                <td data-label="Special Notes / Instructions"><textarea id="note_${item.id}" class="note-textarea" placeholder="e.g. Brand instructions, donor names...">${item.notes || ''}</textarea></td>
                                 <td class="action-cell" data-label=""><button class="btn-save" onclick="updateItem(${item.id})">Save Changes</button></td>
                             </tr>
                         `;
