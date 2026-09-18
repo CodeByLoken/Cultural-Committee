@@ -339,9 +339,12 @@
         <!-- TAB 5: ADMIN EVENT REPORTS MODULE -->
         <div class="tab-content admin-only" id="tabEventReport" style="display: none;">
             <div class="card">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <h2>📋 Competition & Event Rosters</h2>
-                    <button class="btn-print-sm" onclick="printEventReport()">🖨️ Print Participant List</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-print-sm" onclick="printEventReport()">🖨️ Print List</button>
+                        <button class="btn-excel-sm" onclick="exportEventReportToExcel()" style="background: #059669; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; cursor: pointer;">📊 Download Excel</button>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 12px; margin: 16px 0; align-items: center;">

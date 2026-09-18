@@ -1154,3 +1154,37 @@ function printEventReport() {
     `);
     printWin.document.close();
 }
+function exportEventReportToExcel() {
+    const eventName = document.getElementById('reportEventSelect').value;
+    const tableElement = document.getElementById('eventPrintTable');
+
+    if (!eventName || !tableElement) {
+        alert("Please select an event with registered participants to export.");
+        return;
+    }
+
+    let csvContent = [];
+    const rows = tableElement.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        let cols = row.querySelectorAll('th, td');
+        let rowData = [];
+        cols.forEach(col => {
+            let text = col.innerText.replace(/[\n\r]+/g, " ").trim();
+            text = `"${text.replace(/"/g, '""')}"`;
+            rowData.push(text);
+        });
+        csvContent.push(rowData.join(","));
+    });
+
+    const csvString = csvContent.join("\n");
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Participant_Roster_${eventName.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
