@@ -1028,6 +1028,13 @@ async function fetchEventReportDropdown() {
         if (data.status === 'success' && data.eventCounts) {
             const currentVal = select.value;
             select.innerHTML = '<option value="" disabled selected>-- Choose Event --</option>';
+
+            // Add Master Roster option at the top
+            const masterOpt = document.createElement('option');
+            masterOpt.value = 'ALL';
+            masterOpt.innerText = '🌟 All Events (Master Roster - All Participants)';
+            select.appendChild(masterOpt);
+
             data.eventCounts.forEach(ev => {
                 const opt = document.createElement('option');
                 opt.value = ev.event_name;
@@ -1062,7 +1069,7 @@ async function loadEventDetails() {
             summaryPill.style.display = 'block';
 
             if (list.length === 0) {
-                container.innerHTML = `<p class="center-text">No participants registered for this event yet.</p>`;
+                container.innerHTML = `<p class="center-text">No participants registered yet.</p>`;
                 return;
             }
 
@@ -1071,11 +1078,11 @@ async function loadEventDetails() {
                     <thead>
                         <tr>
                             <th style="width: 5%;">#</th>
-                            <th style="width: 25%;">Participant Name</th>
-                            <th style="width: 15%;">Flat</th>
-                            <th style="width: 10%;">Age</th>
+                            <th style="width: 22%;">Participant Name</th>
+                            <th style="width: 12%;">Flat</th>
+                            <th style="width: 8%;">Age</th>
                             <th style="width: 15%;">WhatsApp</th>
-                            <th style="width: 15%;">Music Track</th>
+                            <th style="width: 23%;">Registered Events</th>
                             <th style="width: 15%;">Notes</th>
                         </tr>
                     </thead>
@@ -1085,9 +1092,7 @@ async function loadEventDetails() {
             list.forEach((p, idx) => {
                 const waClean = (p.whatsapp || '').replace(/[^0-9]/g, '');
                 const waLink = waClean.length === 10 ? `https://wa.me/91${waClean}` : `https://wa.me/${waClean}`;
-                const audioLink = p.audioFileUrl
-                    ? `<a href="${p.audioFileUrl}" target="_blank" style="color: #0284c7; font-weight: 600;">🎵 Audio Track</a>`
-                    : '<span style="color: #94a3b8;">-</span>';
+                const eventsList = Array.isArray(p.events) ? p.events.join(', ') : p.events;
 
                 html += `
                     <tr>
@@ -1096,7 +1101,7 @@ async function loadEventDetails() {
                         <td>${p.building}-${p.flat}</td>
                         <td>${p.age} yrs</td>
                         <td><a href="${waLink}" target="_blank" style="color: #25D366; text-decoration: none; font-weight: 600;">💬 ${p.whatsapp}</a></td>
-                        <td>${audioLink}</td>
+                        <td><small>${eventsList}</small></td>
                         <td><small>${p.notes || '-'}</small></td>
                     </tr>
                 `;

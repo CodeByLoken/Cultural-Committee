@@ -447,7 +447,7 @@ app.get('/api/event-reports', async (req, res) => {
 
         let participants = [];
         if (eventName) {
-            const listRes = await pool.query(`
+            let query = `
                 SELECT 
                     id,
                     TO_CHAR(created_at, 'DD/MM/YYYY HH12:MI AM') AS registered_on,
@@ -456,12 +456,22 @@ app.get('/api/event-reports', async (req, res) => {
                     participant_name AS "participantName",
                     age,
                     whatsapp,
+                    events,
                     audio_file_url AS "audioFileUrl",
                     notes
                 FROM event_registrations
-                WHERE $1 = ANY(events)
-                ORDER BY id ASC;
-            `, [eventName]);
+            `;
+            let queryParams = [];
+
+            // If "ALL" is requested, fetch everyone. Otherwise filter by specific event.
+            if (eventName !== 'ALL') {
+                query += ` WHERE $1 = ANY(events)`;
+                queryParams.push(eventName);
+            }
+
+            query += ` ORDER BY id ASC;`;
+
+            const listRes = await pool.query(query, queryParams);
             participants = listRes.rows;
         }
 
