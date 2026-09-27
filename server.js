@@ -136,17 +136,17 @@ app.get('/api/analytics', async (req, res) => {
                 WITH b_counts AS (
                     SELECT 
                         CASE 
-                            WHEN LOWER(flat) LIKE 'a-%'    THEN 'Building A'
-                            WHEN LOWER(flat) LIKE 'b-%'    THEN 'Building B'
-                            WHEN LOWER(flat) LIKE 'c-%'    THEN 'Building C'
-                            WHEN LOWER(flat) LIKE 'd1-%'   THEN 'Building D1'
-                            WHEN LOWER(flat) LIKE 'd2-%'   THEN 'Building D2'
-                            WHEN LOWER(flat) LIKE 'e-%'    THEN 'Building E'
-                            WHEN LOWER(flat) LIKE 'f1-%'   THEN 'Building F1'
-                            WHEN LOWER(flat) LIKE 'maha%'  THEN 'Mahaprasad Annadan'
-                            WHEN Lower(flat) LIKE 'vendo%' THEN 'Vendors'
-                            WHEN Lower(flat) LIKE '%Aarti%' THEN 'Aarti- Donation Box'
-                            WHEN Lower(flat) LIKE '%Food%'  THEN 'Food Stall'
+                            WHEN LOWER(flat) LIKE 'a-%'     THEN 'Building A'
+                            WHEN LOWER(flat) LIKE 'b-%'     THEN 'Building B'
+                            WHEN LOWER(flat) LIKE 'c-%'     THEN 'Building C'
+                            WHEN LOWER(flat) LIKE 'd1-%'    THEN 'Building D1'
+                            WHEN LOWER(flat) LIKE 'd2-%'    THEN 'Building D2'
+                            WHEN LOWER(flat) LIKE 'e-%'     THEN 'Building E'
+                            WHEN LOWER(flat) LIKE 'f1-%'    THEN 'Building F1'
+                            WHEN LOWER(flat) LIKE 'maha%'   THEN 'Mahaprasad Annadan'
+                            WHEN Lower(flat) LIKE 'vendo%'  THEN 'Vendors'
+                            WHEN Lower(flat) LIKE '%aarti%' THEN 'Aarti- Donation Box'
+                            WHEN Lower(flat) LIKE '%food%'  THEN 'Food Stall'
                             ELSE 'Other'
                         END AS building,
                         COUNT(DISTINCT LOWER(flat)) AS contributed_flats,
